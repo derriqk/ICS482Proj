@@ -19,6 +19,8 @@ public class FlowerScript : MonoBehaviour
     public int minLayers = 2; // minimum number of layers 
     public float minPetalLength = 1.5f;
     public float maxPetalLength = 5f;
+    public float minPetalWidth = 1f;
+    public float maxPetalWidth = 3f;
     
     // this is the list of parameters that will be used to determine the characteristics of the flowers
     // param list has to stay scale of 0 - 1 for mutating and mating
@@ -52,6 +54,8 @@ public class FlowerScript : MonoBehaviour
 
         CreateFlower();
         makeSeed();
+
+        useSeed = seed; 
     }
 
     // generates 2D flower structure based on the parameters
@@ -69,7 +73,7 @@ public class FlowerScript : MonoBehaviour
         float petalLength = parameters[petal_length] * (maxPetalLength - minPetalLength) + minPetalLength;
 
 
-        float petalWidth = Mathf.Max(1, parameters[petal_width] * petalLength); // ensure width is not too small compared to length
+        float petalWidth = parameters[petal_width] * (maxPetalWidth - minPetalWidth) + minPetalWidth;
 
         float petalCount = Mathf.Ceil(parameters[petal_count] * (maxPetalCount - minPetalCount) + minPetalCount); // scale petal count to be between min and max
 
@@ -83,7 +87,8 @@ public class FlowerScript : MonoBehaviour
             {
                 GameObject petal = Instantiate(petalPrefab, center.transform.position, Quaternion.identity);
                 petal.transform.SetParent(center.transform);
-                petal.transform.localScale = new Vector3(petalWidth - (.2f * petalWidth * j), petalLength - (.4f * petalLength * j), 1f); // scale down each layer of petals to create a layered effect
+
+                petal.transform.localScale = new Vector3(petalWidth - (.2f * petalWidth * j), petalLength - (.4f * petalLength * j), 1f); // scale down each layer
                 petal.transform.Rotate(0f, 0f, i * angleBetweenPetals + (j * angleBetweenPetals / 2)); // rotate each layer of petals to be in between the previous layer
                 petal.GetComponent<SpriteRenderer>().color = flowerColor;
                 
