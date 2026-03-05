@@ -31,7 +31,14 @@ public class FlowerScript : MonoBehaviour
     [Header("Generation")]
     public int generation = 0;
     public string seed;
-    public string useSeed;
+    public string useSeed = "";    
+    public float mutationRate = 0.4f; // chance for each gene to mutate when creating a new generation
+    public float deviation = 0.15f; // how much a gene can change when it mutates, as a percentage of the total range of that gene
+    
+    [Header("Parents")]
+    public GameObject parent1;
+    public GameObject parent2;
+    public bool asset = false;
 
     [Header("Flower Objects")]
     public GameObject center;
@@ -40,16 +47,20 @@ public class FlowerScript : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if (asset) return;
+        
         parameters = new float[paramDimension];
+
         if (generation == 0)
         {
-            // genomes are initialized randomly for the first generation
+            // first generation is initialized with random parameters
             initRandomParam();
-            // for testing, initialize with a specific seed
-            //initParamFromSeed(useSeed);
-        } else
+        } 
+
+        if (parent1 != null && parent2 != null)
         {
-            // to do, but get fitness scores and find parents
+            // genomes are initialized from the parents for the next generations
+            initParamFromParents(parent1, parent2);
         }
 
         CreateFlower();
@@ -135,6 +146,50 @@ public class FlowerScript : MonoBehaviour
         parameters[total_layers] = Random.Range(0f, 1f);
     }
 
+    public void initParamFromParents(GameObject parent1, GameObject parent2)
+    {
+        FlowerScript script1 = parent1.GetComponentInChildren<FlowerScript>();
+        FlowerScript script2 = parent2.GetComponentInChildren<FlowerScript>();
+
+        randomGene(script1, script2);
+        mutate();
+    }
+
+    private void randomGene(FlowerScript s1, FlowerScript s2)
+    {
+        float[] parent1 = s1.parameters;
+        float[] parent2 = s2.parameters;
+
+        for (int i = 0; i < paramDimension; i++)
+        {
+            float rand = Random.Range(0f, 1f);
+            if (rand < 0.5f)
+            {
+                parameters[i] = parent1[i];
+            } else
+            {
+                parameters[i] = parent2[i];
+            }
+        }
+    }
+
+    private void mutate()
+    {
+        for (int i = 0; i < paramDimension; i++)
+        {
+            float rand = Random.Range(0f, 1f);
+            if (rand < mutationRate)
+            {
+                // mutate this gene
+                float change = Random.Range(-deviation, deviation);
+                parameters[i] += change;
+                // ensure parameter stays between 0 and 1
+                parameters[i] = Mathf.Clamp(parameters[i], 0f, 1f);
+            }
+        }
+    }
+    
+
     void Update()
     {
         // for testing, press space to regenerate the flower with new random parameters
@@ -142,10 +197,22 @@ public class FlowerScript : MonoBehaviour
         {
             RedoFirstGeneration();
         }
+
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            NextGeneration();
+        }
+    }
+
+    public void NextGeneration()
+    {
+        generation++;
+        // to do
     }
 
     public void RedoFirstGeneration()
     {
+        if (asset) return;
         generation = 0;
         // destroy all petals
         foreach (Transform child in center.transform)
