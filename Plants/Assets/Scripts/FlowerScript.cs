@@ -29,11 +29,10 @@ public class FlowerScript : MonoBehaviour
     public float[] parameters;
 
     [Header("Generation")]
-    public int generation = 0;
     public string seed;
     public string useSeed = "";    
-    public float mutationRate = 0.4f; // chance for each gene to mutate when creating a new generation
-    public float deviation = 0.15f; // how much a gene can change when it mutates, as a percentage of the total range of that gene
+    public float mutationRate = 0.6f; // chance for each gene to mutate when creating a new generation
+    public float deviation = 0.55f; // how much a gene can change when it mutates, as a percentage of the total range of that gene
 
     [Header("Flower Objects")]
     public GameObject center;
@@ -50,22 +49,34 @@ public class FlowerScript : MonoBehaviour
     public float windResistanceScore; // petal length and layers (shorter petals and more layers = less likely to be damaged by wind)
     public float waterSheddingScore; // petal width and layers (wider petals and more layers = better at shedding water to prevent mold)
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [Header("Seeds from Parents")]
+    public string parentSeed1;
+    public string parentSeed2;
+    public float[] parentParams1;
+    public float[] parentParams2;
+
+    public void randomStart()
     {
         parameters = new float[paramDimension];
+        initRandomParam();
 
-        // this is purely for testing
-        if (useSeed != "")
-        {
-            initParamFromSeed(useSeed);
-        }
+        CreateFlower();
+        makeSeed();
 
-        if (generation == 0)
-        {
-            // first generation is initialized with random parameters
-            initRandomParam();
-        } 
+        createScores();
+    }
+
+    public void controlStart(string seed1, string seed2)
+    {
+        parameters = new float[paramDimension];
+        parentParams1 = new float[paramDimension];
+        parentParams2 = new float[paramDimension];
+        initParamFromSeed(seed1, parentParams1);
+        initParamFromSeed(seed2, parentParams2);
+
+       // randomGene(parentParams1, parentParams2);
+        randomPercentageGene(parentParams1, parentParams2);
+        mutate();
 
         CreateFlower();
         makeSeed();
@@ -77,9 +88,9 @@ public class FlowerScript : MonoBehaviour
     {
         // now for each score, calculate based on the parameters of the flower, independent of the world stats
         pollinatorAttractScore = 
-        (parameters[petal_length] * 0.5f) + 
-        (parameters[flower_color_Saturation] * 0.2f) + 
-        (parameters[flower_color_Value] * 0.3f); // more weight on brightness
+        (parameters[petal_length] * 0.25f) + 
+        (parameters[flower_color_Saturation] * 0.25f) + 
+        (parameters[flower_color_Value] * 0.4f); 
 
         // petal width and layers (more width and layers = more insulation)
         tempResistanceScore = (parameters[petal_width] * 0.5f) +
@@ -149,12 +160,12 @@ public class FlowerScript : MonoBehaviour
         }
     }
 
-    public void initParamFromSeed(string seed)
+    public void initParamFromSeed(string seed, float[] param)
     {
         string[] paramStrings = seed.Split('_');
         for (int i = 0; i < parameters.Length; i++)
         {
-            parameters[i] = float.Parse(paramStrings[i]);
+            param[i] = float.Parse(paramStrings[i]);
         }
     }
 
@@ -171,20 +182,8 @@ public class FlowerScript : MonoBehaviour
         parameters[total_layers] = Random.Range(0f, 1f);
     }
 
-    public void initParamFromParents(GameObject parent1, GameObject parent2)
+    private void randomGene(float[] parent1, float[] parent2)
     {
-        FlowerScript script1 = parent1.GetComponentInChildren<FlowerScript>();
-        FlowerScript script2 = parent2.GetComponentInChildren<FlowerScript>();
-
-        randomGene(script1, script2);
-        mutate();
-    }
-
-    private void randomGene(FlowerScript s1, FlowerScript s2)
-    {
-        float[] parent1 = s1.parameters;
-        float[] parent2 = s2.parameters;
-
         for (int i = 0; i < paramDimension; i++)
         {
             float rand = Random.Range(0f, 1f);
@@ -195,6 +194,15 @@ public class FlowerScript : MonoBehaviour
             {
                 parameters[i] = parent2[i];
             }
+        }
+    }
+
+    private void randomPercentageGene(float[] parent1, float[] parent2)
+    {
+        for (int i = 0; i < paramDimension; i++)
+        {
+            float percentage = Random.Range(0f, 1f);
+            parameters[i] = parent1[i] * percentage + parent2[i] * (1f - percentage);
         }
     }
 
@@ -223,6 +231,6 @@ public class FlowerScript : MonoBehaviour
                 Destroy(child.gameObject);
             }
         }
-        Start(); // recreate the flower with new random parameters
+        randomStart();
     }
 }

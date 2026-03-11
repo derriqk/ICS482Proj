@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class WorldHandler : MonoBehaviour
 {
@@ -57,14 +58,36 @@ public class WorldHandler : MonoBehaviour
     [Header("Generation")]
     public int generation;
     public float[] scoreList; // parallel to flowers, uses flower scores and world states to determine fitness score for each plant
-    public GameObject worst; // worst score
-    public GameObject best; // best score
+    public GameObject best2; // best score
+    public GameObject best1; // best score
+    public string best1Seed;
+    public string best2Seed;
+
+    // index 2 - 6 are the 5 randomly chosen flowers
+    // index 0 and 1 are the best of the 5 to create next generation
+    public GameObject[] boxes;
+    public GameObject boxesParent;
+    public GameObject[] random5flowers;
+    public int[] indicesOf5;
+    public int bestIndex1;
+    public int bestIndex2;
+
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         plantCount = locationHolder.transform.childCount;
         scoreList = new float[plantCount];
+        boxes = new GameObject[5];
+        random5flowers = new GameObject[5];
+        indicesOf5 = new int[5];
+
+        int i = 0;
+        foreach (Transform child in boxesParent.transform)
+        {
+            boxes[i] = child.gameObject;
+            i++;
+        }
 
         populateLocation();
 
@@ -72,12 +95,15 @@ public class WorldHandler : MonoBehaviour
 
         initMinMaxStates();
 
+        // random states
         createWorldStates();
+
+        //generateSummer(); // generate summer for this gen
         
         generation = 1;
     }
 
-    private void populatePlantAndScriptList()
+    private void populatePlantAndScriptList(bool randomize = true)
     {
         plantList = new GameObject[plantCount];
         scriptList = new FlowerScript[plantCount];
@@ -86,6 +112,12 @@ public class WorldHandler : MonoBehaviour
         {
             plantList[i] = Instantiate(flowerPrefab, plantLocationList[i].transform.position, Quaternion.identity, plantHolderParent.transform);
             scriptList[i] = plantList[i].GetComponent<FlowerScript>();
+            if (randomize) {
+                scriptList[i].randomStart();
+            } else
+            {
+                scriptList[i].controlStart(best1Seed, best2Seed);
+            }
         }
     }
 
@@ -118,10 +150,114 @@ public class WorldHandler : MonoBehaviour
     {
         generation++;
 
+        if (boxesParent.activeSelf == false)
+        {
+            boxesParent.SetActive(true);
+        }
+
+        best1.transform.position = new Vector3(110, -10, 0);
+        best2.transform.position = new Vector3(110, -10, 0);
+
         calculateFitnessScores();
 
-        // then do parents, whatver etc.
+        chooseRandom5();
+
+        pickBest2();
+
+        getSeed(bestIndex1, bestIndex2);
+
+        // destroy old plants
+        StartCoroutine(DestroyOldPlants());
     }   
+
+    private IEnumerator DestroyOldPlants()
+    {
+        yield return new WaitForSeconds(1f); // wait for 1 second before destroying old plants to allow time for best 2 to be shown
+
+        foreach (GameObject plant in plantList)
+        {
+            Destroy(plant);
+        }
+
+        boxesParent.SetActive(false);
+        best1.transform.position = new Vector3(110, -10, 0);
+        best2.transform.position = new Vector3(110, -10, 0);
+        populatePlantAndScriptList(false); // create new plants with seeds from best 2
+
+        yield return null; // wait for next frame to ensure new plants are created before any further actions
+    }
+
+    private void pickBest2()
+    {
+        // reset search for best 2 among the 5 random flowers
+        bestIndex1 = 0;
+        bestIndex2 = -1; 
+        // first pass to find bestIndex1
+        for (int i = 0; i < random5flowers.Length; i++)
+        {
+            int indexInPlantList = indicesOf5[i];
+            if (scoreList[indexInPlantList] > scoreList[indicesOf5[bestIndex1]])
+            {
+                bestIndex1 = i;
+            }
+        }
+
+        // second pass to find bestIndex2, ensuring it's different from bestIndex1
+        for (int i = 0; i < random5flowers.Length; i++)
+        {
+            if (i == bestIndex1) continue; // skip the best already chosen
+
+            int indexInPlantList = indicesOf5[i];
+
+            if (bestIndex2 == -1 || scoreList[indexInPlantList] > scoreList[indicesOf5[bestIndex2]])
+            {
+                bestIndex2 = i;
+            }
+        }
+
+        // save seed of the best two
+        getSeed(bestIndex1, bestIndex2);
+
+        // set the best 2 boxes to the positions of the best 2 flowers
+        best1.transform.position = random5flowers[bestIndex1].transform.position;
+        Vector3 pos = best1.transform.position;
+        pos.z = -1f; 
+        best1.transform.position = pos;
+        best2.transform.position = random5flowers[bestIndex2].transform.position;
+        pos = best2.transform.position;
+        pos.z = -1f; 
+        best2.transform.position = pos;
+    }
+
+    private void getSeed(int p1, int p2)
+    {
+        best1Seed = scriptList[indicesOf5[p1]].seed;
+        best2Seed = scriptList[indicesOf5[p2]].seed;
+    }
+
+    private void chooseRandom5()
+    {
+        int plantsNeeded = 5;
+        int plantChosen = 0;
+
+        for (int i = 0; i < plantCount && plantChosen < plantsNeeded; i++)
+        {
+            int plantsRemaining = plantCount - i;
+            float chance = (plantsNeeded - plantChosen) / (float)plantsRemaining;
+
+            if (Random.Range(0f, 1f) < chance)
+            {
+                random5flowers[plantChosen] = plantList[i];
+                indicesOf5[plantChosen] = i;
+                plantChosen++;
+            }
+        }
+
+        for (int i = 0; i < random5flowers.Length; i++)
+        {
+            boxes[i].transform.position = random5flowers[i].transform.position;
+        }
+    }
 
     private void ResetEvolution()
     {
@@ -131,6 +267,12 @@ public class WorldHandler : MonoBehaviour
         {
             script.RestartParams(); // call inner script reset function
         }
+
+        createWorldStates(); // new world states for new evolution
+
+        boxesParent.SetActive(false);
+        best1.transform.position = new Vector3(110, -10, 0);
+        best2.transform.position = new Vector3(110, -10, 0);
     }
 
     public void initMinMaxStates()
@@ -174,6 +316,11 @@ public class WorldHandler : MonoBehaviour
         oxygen_Level = Random.Range(minOxygen, maxOxygen);
         pollinator_Level = Random.Range(minPollinator, maxPollinator);
 
+        normalizeWorldStates();
+    }
+
+    private void normalizeWorldStates()
+    {
         // normalize to 0-1 score
         tempScore = (temperature - minTemp) / (maxTemp - minTemp);
         sunScore = (sunlight_Level - minSun) / (maxSun - minSun);
@@ -190,12 +337,6 @@ public class WorldHandler : MonoBehaviour
         float tempWeight        = 0.3f;
         float windWeight        = 0.2f;
         float waterWeight       = 0.1f;
-
-        float min = 1;
-        float max = 0;
-
-        int minIndex = 0;
-        int maxIndex = 0;
 
         for (int i = 0; i < plantCount; i++)
         {
@@ -229,20 +370,19 @@ public class WorldHandler : MonoBehaviour
             // save in list
             scoreList[i] = overallFitness;
 
-            if (overallFitness < min)
-            {
-                min = overallFitness;
-                minIndex = i;
-            }
-
-            if (overallFitness > max)
-            {
-                max = overallFitness;
-                maxIndex = i;
-            }
         }
 
-        worst = plantList[minIndex];
-        best = plantList[maxIndex];
+    }
+
+    private void generateSummer()
+    {
+        temperature = Random.Range(minTemp + (maxTemp - minTemp) * 0.6f, maxTemp * 0.8f);
+        sunlight_Level = Random.Range(minSun + (maxSun - minSun) * 0.6f, maxSun);
+        windSpeed = Random.Range(minWind, minWind + (maxWind - minWind) * 0.3f);
+        rain_Level = Random.Range(minRain, minRain + (maxRain - minRain) * 0.3f);
+        oxygen_Level = Random.Range(minOxygen + (maxOxygen - minOxygen) * 0.7f, maxOxygen);
+        pollinator_Level = Random.Range(minPollinator + (maxPollinator - minPollinator) * 0.5f, maxPollinator);
+
+        normalizeWorldStates(); // convert to 0-1
     }
 }
