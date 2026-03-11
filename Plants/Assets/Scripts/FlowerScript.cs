@@ -34,22 +34,32 @@ public class FlowerScript : MonoBehaviour
     public string useSeed = "";    
     public float mutationRate = 0.4f; // chance for each gene to mutate when creating a new generation
     public float deviation = 0.15f; // how much a gene can change when it mutates, as a percentage of the total range of that gene
-    
-    [Header("Parents")]
-    public GameObject parent1;
-    public GameObject parent2;
-    public bool asset = false;
 
     [Header("Flower Objects")]
     public GameObject center;
     public GameObject petalPrefab;
 
+    // to be calculated AFTER params are set, based on the characteristics of the flower
+    // these are its scores INDIVIDUAL from the world
+    // these are used by world handler to determine fitness score based on global states
+    // example: pollinator attract score is derived from params, 
+    // but fitness is derived from world pollinator level compared to the flower's pollinator attract score
+    [Header("Score Traits for FLOWER PETALS")]
+    public float pollinatorAttractScore; // petal length and color brightness
+    public float tempResistanceScore; // petal width and layers (more width and layers = more insulation)
+    public float windResistanceScore; // petal length and layers (shorter petals and more layers = less likely to be damaged by wind)
+    public float waterSheddingScore; // petal width and layers (wider petals and more layers = better at shedding water to prevent mold)
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (asset) return;
-        
         parameters = new float[paramDimension];
+
+        // this is purely for testing
+        if (useSeed != "")
+        {
+            initParamFromSeed(useSeed);
+        }
 
         if (generation == 0)
         {
@@ -57,16 +67,30 @@ public class FlowerScript : MonoBehaviour
             initRandomParam();
         } 
 
-        if (parent1 != null && parent2 != null)
-        {
-            // genomes are initialized from the parents for the next generations
-            initParamFromParents(parent1, parent2);
-        }
-
         CreateFlower();
         makeSeed();
 
-        useSeed = seed; 
+        createScores();
+    }
+
+    public void createScores()
+    {
+        // now for each score, calculate based on the parameters of the flower, independent of the world stats
+        pollinatorAttractScore = 
+        (parameters[petal_length] * 0.5f) + 
+        (parameters[flower_color_Saturation] * 0.2f) + 
+        (parameters[flower_color_Value] * 0.3f); // more weight on brightness
+
+        // petal width and layers (more width and layers = more insulation)
+        tempResistanceScore = (parameters[petal_width] * 0.5f) +
+        (parameters[total_layers] * 0.5f);
+
+        windResistanceScore = (1f - parameters[petal_length]) * 0.5f + // shorter petals are better for wind resistance
+        (parameters[total_layers] * 0.5f);
+
+        // petal width and layers (wider petals and more layers = better at shedding water)
+        waterSheddingScore = (parameters[petal_width] * 0.5f) +
+        (parameters[total_layers] * 0.5f);
     }
 
     // generates 2D flower structure based on the parameters
@@ -114,9 +138,10 @@ public class FlowerScript : MonoBehaviour
 
     public void makeSeed()
     {
+        seed = ""; // reset
         for (int i = 0; i < parameters.Length; i++)
         {
-            seed += parameters[i].ToString("F2");
+            seed += parameters[i].ToString();
             if (i < parameters.Length - 1)
             {
                 seed += "_";
@@ -188,33 +213,9 @@ public class FlowerScript : MonoBehaviour
             }
         }
     }
-    
 
-    void Update()
+    public void RestartParams()
     {
-        // for testing, press space to regenerate the flower with new random parameters
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            RedoFirstGeneration();
-        }
-
-        if (Input.GetKeyDown(KeyCode.N))
-        {
-            NextGeneration();
-        }
-    }
-
-    public void NextGeneration()
-    {
-        generation++;
-        // to do
-    }
-
-    public void RedoFirstGeneration()
-    {
-        if (asset) return;
-        generation = 0;
-        // destroy all petals
         foreach (Transform child in center.transform)
         {
             if (child.gameObject != center)
