@@ -30,9 +30,9 @@ public class FlowerScript : MonoBehaviour
 
     [Header("Generation")]
     public string seed;
-    public string useSeed = "";    
-    public float mutationRate = 0.6f; // chance for each gene to mutate when creating a new generation
-    public float deviation = 0.55f; // how much a gene can change when it mutates, as a percentage of the total range of that gene
+    public string useSeed = "";
+    public float mutationRate; // chance for each gene to mutate when creating a new generation
+    public float deviation; // how much a gene can change when it mutates, as a percentage of the total range of that gene
 
     [Header("Flower Objects")]
     public GameObject center;
@@ -74,8 +74,11 @@ public class FlowerScript : MonoBehaviour
         initParamFromSeed(seed1, parentParams1);
         initParamFromSeed(seed2, parentParams2);
 
-       // randomGene(parentParams1, parentParams2);
+        //randomGene(parentParams1, parentParams2);
         randomPercentageGene(parentParams1, parentParams2);
+        //uniformCrossover(parentParams1, parentParams2);
+        //randomBetween(parentParams1, parentParams2);
+
         mutate();
 
         CreateFlower();
@@ -203,6 +206,29 @@ public class FlowerScript : MonoBehaviour
         {
             float percentage = Random.Range(0f, 1f);
             parameters[i] = parent1[i] * percentage + parent2[i] * (1f - percentage);
+        }
+    }
+
+    private void randomBetween(float[] parent1, float[] parent2)
+    {
+        for (int i = 0; i < paramDimension; i++)
+        {
+            parameters[i] = Random.Range(Mathf.Min(parent1[i], parent2[i]), Mathf.Max(parent1[i], parent2[i]));
+        }
+    }
+
+    private void uniformCrossover(float[] parent1, float[] parent2)
+    {
+        for (int i = 0; i < paramDimension; i++)
+        {
+            float rand = Random.Range(0f, 1f);
+            if (rand < 0.5f)
+            {
+                parameters[i] = parent1[i];
+            } else
+            {
+                parameters[i] = parent2[i];
+            }
         }
     }
 
