@@ -62,6 +62,7 @@ public class WorldHandler : MonoBehaviour
     public GameObject best1; // best score
     public string best1Seed;
     public string best2Seed;
+    public string worstSeed;
 
     // index 2 - 6 are the 5 randomly chosen flowers
     // index 0 and 1 are the best of the 5 to create next generation
@@ -71,6 +72,7 @@ public class WorldHandler : MonoBehaviour
     public int[] indicesOf5;
     public int bestIndex1;
     public int bestIndex2;
+    public int worstIndex;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -131,6 +133,8 @@ public class WorldHandler : MonoBehaviour
         }
     }
 
+    private float timer = 0f;
+
     // Update is called once per frame
     void Update()
     {
@@ -143,6 +147,13 @@ public class WorldHandler : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.N))
         {
             NextGeneration(); 
+        }
+
+        timer += Time.deltaTime;
+        if (timer >= .1f)
+        {
+            timer = 0f;
+            NextGeneration();
         }
     }
 
@@ -160,9 +171,13 @@ public class WorldHandler : MonoBehaviour
 
         calculateFitnessScores();
 
+        normalizeWorldStates();
+
         chooseRandom5();
 
         pickBest2();
+
+        pickWorst();
 
         getSeed(bestIndex1, bestIndex2);
 
@@ -170,9 +185,27 @@ public class WorldHandler : MonoBehaviour
         StartCoroutine(DestroyOldPlants());
     }   
 
+    private void pickWorst()
+    {
+        worstIndex = 0;
+
+        for (int i = 0; i < random5flowers.Length; i++)
+        {
+            int indexInPlantList = indicesOf5[i];
+            if (scoreList[indexInPlantList] < scoreList[indicesOf5[worstIndex]])
+            {
+                worstIndex = i;
+            }
+        }
+
+        worstSeed = scriptList[indicesOf5[worstIndex]].seed;
+    }
+
+    public float waitTime;
+
     private IEnumerator DestroyOldPlants()
     {
-        yield return new WaitForSeconds(1f); // wait for 1 second before destroying old plants to allow time for best 2 to be shown
+        yield return new WaitForSeconds(waitTime); // wait for 1 second before destroying old plants to allow time for best 2 to be shown
 
         foreach (GameObject plant in plantList)
         {
