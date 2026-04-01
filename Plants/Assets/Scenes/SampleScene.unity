@@ -2000,7 +2000,7 @@ MonoBehaviour:
   bestIndex1: 0
   bestIndex2: 0
   worstIndex: 0
-  waitTime: 0.6
+  waitTime: 0
 --- !u!4 &723999757
 Transform:
   m_ObjectHideFlags: 0
