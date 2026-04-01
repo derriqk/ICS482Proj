@@ -146,8 +146,8 @@ MonoBehaviour:
   parameters: []
   seed: 0
   useSeed: 
-  mutationRate: 0.4
-  deviation: 0.2
+  mutationRate: 0.7
+  deviation: 0.3
   center: {fileID: 6229496908554427962}
   petalPrefab: {fileID: 8233431003556898170, guid: 6e93e2767c3e7054abdebd6d182f24b3, type: 3}
   pollinatorAttractScore: 0

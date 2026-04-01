@@ -47,6 +47,8 @@ public class WorldHandler : MonoBehaviour
     public GameObject flowerPrefab; // holder for flower 
     private int plantCount; // determined by locations
     public GameObject locationHolder; // predetermined spawn locations
+    public GameObject locPrefab;
+    public GameObject locSpawnPoint;
     public GameObject[] plantLocationList; // holder for locations
 
     // holds all plant roots
@@ -78,6 +80,8 @@ public class WorldHandler : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        makeLocations();
+
         plantCount = locationHolder.transform.childCount;
         scoreList = new float[plantCount];
         boxes = new GameObject[5];
@@ -123,6 +127,18 @@ public class WorldHandler : MonoBehaviour
         }
     }
 
+    private void makeLocations()
+    {
+        for (int i = 0; i < 23; i++)
+        {
+            for (int j = 0; j < 13; j++)
+            {
+                GameObject loc = Instantiate(locPrefab, locSpawnPoint.transform.position + new Vector3(i * 15, j * 15, 0), Quaternion.identity, locationHolder.transform);
+                loc.transform.parent = locationHolder.transform;
+            }
+        }
+    }
+
     private void populateLocation()
     {
         plantLocationList = new GameObject[plantCount];
@@ -149,12 +165,12 @@ public class WorldHandler : MonoBehaviour
             NextGeneration(); 
         }
 
-        timer += Time.deltaTime;
-        if (timer >= .1f)
-        {
-            timer = 0f;
-            NextGeneration();
-        }
+        // timer += Time.deltaTime;
+        // if (timer >= .1f)
+        // {
+        //     timer = 0f;
+        //     NextGeneration();
+        // }
     }
 
     private void NextGeneration()
@@ -166,8 +182,8 @@ public class WorldHandler : MonoBehaviour
             boxesParent.SetActive(true);
         }
 
-        best1.transform.position = new Vector3(110, -10, 0);
-        best2.transform.position = new Vector3(110, -10, 0);
+        best1.transform.position = new Vector3(1110, -10, 0);
+        best2.transform.position = new Vector3(1110, -10, 0);
 
         calculateFitnessScores();
 
@@ -213,8 +229,8 @@ public class WorldHandler : MonoBehaviour
         }
 
         boxesParent.SetActive(false);
-        best1.transform.position = new Vector3(110, -10, 0);
-        best2.transform.position = new Vector3(110, -10, 0);
+        best1.transform.position = new Vector3(1110, -10, 0);
+        best2.transform.position = new Vector3(1110, -10, 0);
         populatePlantAndScriptList(false); // create new plants with seeds from best 2
 
         yield return null; // wait for next frame to ensure new plants are created before any further actions
@@ -304,8 +320,8 @@ public class WorldHandler : MonoBehaviour
         createWorldStates(); // new world states for new evolution
 
         boxesParent.SetActive(false);
-        best1.transform.position = new Vector3(110, -10, 0);
-        best2.transform.position = new Vector3(110, -10, 0);
+        best1.transform.position = new Vector3(1110, -10, 0);
+        best2.transform.position = new Vector3(1110, -10, 0);
     }
 
     public void initMinMaxStates()
