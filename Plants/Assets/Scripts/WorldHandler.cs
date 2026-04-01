@@ -171,6 +171,12 @@ public class WorldHandler : MonoBehaviour
         //     timer = 0f;
         //     NextGeneration();
         // }
+
+        // only use after using next gen
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            StartCoroutine(DestroyOldPlants());
+        }
     }
 
     private void NextGeneration()
@@ -198,7 +204,7 @@ public class WorldHandler : MonoBehaviour
         getSeed(bestIndex1, bestIndex2);
 
         // destroy old plants
-        StartCoroutine(DestroyOldPlants());
+        //StartCoroutine(DestroyOldPlants());
     }   
 
     private void pickWorst()
@@ -222,6 +228,8 @@ public class WorldHandler : MonoBehaviour
     private IEnumerator DestroyOldPlants()
     {
         yield return new WaitForSeconds(waitTime); // wait for 1 second before destroying old plants to allow time for best 2 to be shown
+
+
 
         foreach (GameObject plant in plantList)
         {
