@@ -165,12 +165,13 @@ public class WorldHandler : MonoBehaviour
             NextGeneration(); 
         }
 
-        // timer += Time.deltaTime;
-        // if (timer >= .1f)
-        // {
-        //     timer = 0f;
-        //     NextGeneration();
-        // }
+        timer += Time.deltaTime;
+        if (timer >= .1f)
+        {
+            timer = 0f;
+            NextGeneration();
+            StartCoroutine(DestroyOldPlants());
+        }
 
         // only use after using next gen
         if (Input.GetKeyDown(KeyCode.G))
@@ -193,13 +194,15 @@ public class WorldHandler : MonoBehaviour
 
         calculateFitnessScores();
 
-        normalizeWorldStates();
+        updateWorldState();
 
-        chooseRandom5();
+        //chooseRandom5();
 
-        pickBest2();
+        //pickBest2();
 
-        pickWorst();
+        pickBestofAll();
+
+        //pickWorst();
 
         getSeed(bestIndex1, bestIndex2);
 
@@ -242,6 +245,44 @@ public class WorldHandler : MonoBehaviour
         populatePlantAndScriptList(false); // create new plants with seeds from best 2
 
         yield return null; // wait for next frame to ensure new plants are created before any further actions
+    }
+
+    private void pickBestofAll()
+    {
+        int bestIndex = 0;
+        int bestIndex2 = -1;
+
+        // first pass
+        for (int i = 0; i < scriptList.Length; i++)
+        {
+            if (scoreList[i] > scoreList[bestIndex])
+            {
+                bestIndex = i;
+            }
+        }
+
+        for (int i = 0; i < scriptList.Length; i++)
+        {
+            if (i == bestIndex) continue;
+
+            if (bestIndex2 == -1 || scoreList[i] > scoreList[bestIndex2])
+            {
+                bestIndex2 = i;
+            }
+        }
+
+        best1Seed = scriptList[bestIndex].seed;
+        best2Seed = scriptList[bestIndex2].seed;
+
+        // set the best 2 boxes to the positions of the best 2 flowers
+        best1.transform.position = scriptList[bestIndex].gameObject.transform.position;
+        Vector3 pos = best1.transform.position;
+        pos.z = -1f; 
+        best1.transform.position = pos;
+        best2.transform.position = scriptList[bestIndex2].gameObject.transform.position;
+        pos = best2.transform.position;
+        pos.z = -1f; 
+        best2.transform.position = pos;
     }
 
     private void pickBest2()
@@ -374,6 +415,16 @@ public class WorldHandler : MonoBehaviour
         pollinator_Level = Random.Range(minPollinator, maxPollinator);
 
         normalizeWorldStates();
+    }
+
+    public void updateWorldState()
+    {
+        temperature = tempScore*(maxTemp - minTemp) + minTemp;
+        sunlight_Level = sunScore*(maxSun - minSun) + minSun;
+        windSpeed = windScore*(maxWind - minWind) + minWind;
+        rain_Level = rainScore*(maxRain - minRain) + minRain;
+        oxygen_Level = oxygenScore*(maxOxygen - minOxygen) + minOxygen;
+        pollinator_Level = pollinatorScore*(maxPollinator - minPollinator) + minOxygen;
     }
 
     private void normalizeWorldStates()
