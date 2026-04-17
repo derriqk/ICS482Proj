@@ -42,6 +42,34 @@ public class StalkGrow2 : MonoBehaviour
     public float mutationRate; // chance for each gene to mutate when creating a new generation
     public float deviation; // how much a gene can change when it mutates, as a percentage of the total range of that gene
 
+    [Header ("Leaf Parameters Constants")]
+    public const int leaf_color_hue = 0;
+    public const int leaf_color_saturation = 1;
+    public const int leaf_color_value = 2;
+    public const int leaf_length = 3;
+    public const int leaf_width = 4;
+    public const int leaf_density = 5;
+    public const int leaf_angle = 6;
+
+    [Header ("Leaf Parameter Ranges")]
+    public float minLeafLength = 0.5f;
+    public float maxLeafLength = 2f;
+    public float minLeafWidth = 0.1f;
+    public float maxLeafWidth = 0.5f;
+    public float minLeafDensity = 0.1f; 
+    public float maxLeafDensity = 0.9f;
+    public float minLeafAngle = -30f;
+    public float maxLeafAngle = 30f;
+
+    [Header ("Leaf Genetic Parameter List")]
+    private int leafParamDimension = 7;
+    public float[] leafParameters;
+
+    [Header("Leaf Objects")]
+    public GameObject leafPrefab;
+    int leafCount = 0; // later used for fitness
+    public GameObject leafHolder; // parent object to hold all the leaves for organization
+
     [Header("Stalk Objects")]
     public GameObject spawnPoint;
     // each stalk prefab has a circle at the end to connect whatever
@@ -49,6 +77,8 @@ public class StalkGrow2 : MonoBehaviour
     public float percentageShrink;
     public List<List<GameObject>> stalkSegments = new List<List<GameObject>>(); // list of stalks, each stalk is a list of segments
     public GameObject segmentHolder; // parent object to hold all the segments for organization, one for each list
+    int stalkCount;
+    Color stalkColor;
 
     [Header("Score Traits for STALK")]
     public float windResistanceScore; // stalk thickness and flexibility
@@ -59,21 +89,67 @@ public class StalkGrow2 : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        parameters = new float[paramDimension];
         initRandomParam();
         createStalk();
     }
 
+    public void createLeaves()
+    {
+        // keep greenish
+        float h = Mathf.Lerp(0.28f, 0.38f, leafParameters[leaf_color_hue]);
+        float s = Mathf.Lerp(0.6f, 1.0f, leafParameters[leaf_color_saturation]);
+        float v = Mathf.Lerp(0.4f, 0.9f, leafParameters[leaf_color_value]);
+        Color leafColor = Color.HSVToRGB(h, s, v);
+
+        float leafLength = Mathf.Lerp(minLeafLength, maxLeafLength, leafParameters[leaf_length]);
+        float leafWidth = Mathf.Lerp(minLeafWidth, maxLeafWidth, leafParameters[leaf_width]);
+
+        //float leafAngle = Mathf.Lerp(minLeafAngle, maxLeafAngle, leafParameters[leaf_angle]);
+        float leafAngle = 45f;
+
+        // now iterate through stalk segment
+        for (int i = 0; i < stalkCount; i++)
+        {
+            List<GameObject> segments = stalkSegments[i];
+            int index = 0;
+            foreach (GameObject segment in segments)
+            {
+                Vector3 spawnPos = segment.transform.position 
+                + segment.transform.up * segment.transform.localScale.y * 0.5f;
+
+                Quaternion spawnRot = Quaternion.Euler(0f, 0f, Random.Range(-leafAngle, leafAngle));
+
+                GameObject leaf = Instantiate(leafPrefab, spawnPos, spawnRot);
+
+                float brightness = 1f - (0.1f * i);
+
+                Color c = stalkColor * brightness;
+                c.a = 1f;
+
+                leaf.transform.localScale = new Vector3(leafWidth, leafLength, 1f);
+
+                // make leaf shrink as it goes up the stalk, for more natural look
+                leaf.transform.localScale *= Mathf.Lerp(1f, 0.5f, (float)index / segments.Count);
+
+                leaf.GetComponent<SpriteRenderer>().color = c;
+                leaf.transform.parent = leafHolder.transform;
+
+                leafCount++;
+                index++;
+            }
+        }
+    }
+
     public void createStalk()
     {
-        int stalkCount = Mathf.RoundToInt(minMainStalkCount 
+        stalkCount = Mathf.RoundToInt(minMainStalkCount 
         + parameters[main_stalk_count] * (maxMainStalkCount - minMainStalkCount));
 
         // keep greenish
         float h = Mathf.Lerp(0.28f, 0.38f, parameters[stalk_color_hue]);
         float s = Mathf.Lerp(0.6f, 1.0f, parameters[stalk_color_saturation]);
         float v = Mathf.Lerp(0.4f, 0.9f, parameters[stalk_color_value]);
-        Color stalkColor = Color.HSVToRGB(h, s, v);
+        stalkColor = Color.HSVToRGB(h, s, v);
 
         int stalkHeight = Mathf.RoundToInt(minStalkHeight 
         + parameters[stalk_height] * (maxStalkHeight - minStalkHeight));
@@ -142,6 +218,8 @@ public class StalkGrow2 : MonoBehaviour
 
             stalkSegments.Add(segments);
         }
+
+        createLeaves();
     }
 
     // Update is called once per frame
@@ -191,5 +269,14 @@ public class StalkGrow2 : MonoBehaviour
         parameters[stalk_height] = Random.Range(0f, 1f);
         parameters[segment_angle_variation] = Random.Range(0f, 1f);
         parameters[start_stalk_angle] = Random.Range(0f, 1f);
+
+        leafParameters = new float[leafParamDimension];
+        leafParameters[leaf_color_hue] = Random.Range(0f, 1f);
+        leafParameters[leaf_color_saturation] = Random.Range(0f, 1f);
+        leafParameters[leaf_color_value] = Random.Range(0f, 1f);    
+        leafParameters[leaf_length] = Random.Range(0f, 1f);
+        leafParameters[leaf_width] = Random.Range(0f, 1f);
+        leafParameters[leaf_density] = Random.Range(0f, 1f);
+        leafParameters[leaf_angle] = Random.Range(0f, 1f);
     }
 }
