@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class StalkGrow2 : MonoBehaviour
 {
@@ -12,25 +13,27 @@ public class StalkGrow2 : MonoBehaviour
     public const int stalk_color_value = 2;
     public const int stalk_length = 3; // the segment length
     public const int stalk_width = 4; // the segment width
-    public const int branch_angle = 5; 
-    public const int branch_probability = 6; // idea: branching increases scores of sort
-    public const int stalk_height = 7; // the recursion limit for main stalk
-    public const int main_stalk_count = 8; 
+    public const int main_stalk_count = 5; // alays 1 to 3, or whatever
+    public const int stalk_height = 6; //stalk limit for each main stalk
+    public const int segment_angle_variation = 7; // how much each segment can vary in angle, for more natural growth
+    public const int start_stalk_angle = 8; // the angle of the first segment, for more variation in growth direction
 
     [Header("Stalk Parameter Ranges")]
     public float minStalkLength = 0.5f;
     public float maxStalkLength = 2f;
     public float minStalkWidth = 0.1f;
     public float maxStalkWidth = 0.5f;
-    public float minBranchAngle = 20f;
-    public float maxBranchAngle = 75f;
+    public float minMainStalkCount = 1f;
+    public float maxMainStalkCount = 3f;
     public float minStalkHeight = 1f; // no branches, one flower at the end
     public float maxStalkHeight = 10f; // 10 stalks high
-    public float minMainStalkCount = 1f; // only one main stalk
-    public float maxMainStalkCount = 5f; // up to 5 main
+    public float minSegmentAngleVariation = 0f;
+    public float maxSegmentAngleVariation = 10f;
+    public float minStartStalkAngle = -30f;
+    public float maxStartStalkAngle = 30f;
 
     [Header("Stalk Genetic Parameter List")]
-    private int paramDimension = 8;
+    private int paramDimension = 9;
     public float[] parameters;
 
     [Header("Generation")]
@@ -41,8 +44,11 @@ public class StalkGrow2 : MonoBehaviour
 
     [Header("Stalk Objects")]
     public GameObject spawnPoint;
+    // each stalk prefab has a circle at the end to connect whatever
     public GameObject stalkPrefab;
     public float percentageShrink;
+    public List<List<GameObject>> stalkSegments = new List<List<GameObject>>(); // list of stalks, each stalk is a list of segments
+    public GameObject segmentHolder; // parent object to hold all the segments for organization, one for each list
 
     [Header("Score Traits for STALK")]
     public float windResistanceScore; // stalk thickness and flexibility
@@ -53,13 +59,112 @@ public class StalkGrow2 : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        parameters = new float[paramDimension];
+        initRandomParam();
+        createStalk();
+    }
+
+    public void createStalk()
+    {
+        int stalkCount = Mathf.RoundToInt(minMainStalkCount 
+        + parameters[main_stalk_count] * (maxMainStalkCount - minMainStalkCount));
+
+        // keep greenish
+        float h = Mathf.Lerp(0.28f, 0.38f, parameters[stalk_color_hue]);
+        float s = Mathf.Lerp(0.6f, 1.0f, parameters[stalk_color_saturation]);
+        float v = Mathf.Lerp(0.4f, 0.9f, parameters[stalk_color_value]);
+        Color stalkColor = Color.HSVToRGB(h, s, v);
+
+        int stalkHeight = Mathf.RoundToInt(minStalkHeight 
+        + parameters[stalk_height] * (maxStalkHeight - minStalkHeight));
+
+        float startAngle = Mathf.Lerp(minStartStalkAngle, maxStartStalkAngle, parameters[start_stalk_angle]);
+
+        for (int i = 0; i < stalkCount; i++)
+        {
+            List<GameObject> segments = new List<GameObject>();
+            Vector3 currentPosition = spawnPoint.transform.position;
+
+            float totalSpread = 15f;
+
+            float baseAngle;
+
+            if (stalkCount == 1)
+            {
+                // if one main stalk, just go straight up with some angle variation
+                baseAngle = 0f;
+            }
+            else
+            {
+                float t = (float)i / (stalkCount - 1); 
+                baseAngle = Mathf.Lerp(-totalSpread * 0.5f, totalSpread * 0.5f, t);
+            }
+
+            Quaternion currentRotation = Quaternion.Euler(0f, 0f, baseAngle + startAngle);
+
+            // create holder for each main stalk
+            GameObject stalkHolder = new GameObject("StalkHolder" + i);
+            stalkHolder.transform.parent = segmentHolder.transform;
+
+            // allow stalkHeight to not always be the same for each main stalk, add some variation
+            
+
+            // create the main stalk segments
+            for (int j = 0; j < Mathf.RoundToInt(stalkHeight); j++)
+            {
+                GameObject segment = Instantiate(stalkPrefab, currentPosition, currentRotation);
+                segment.transform.localScale = new Vector3(
+                    Mathf.Lerp(minStalkWidth, maxStalkWidth, parameters[stalk_width]),
+                    Mathf.Lerp(minStalkLength, maxStalkLength, parameters[stalk_length]),
+                    1f
+                );
+
+                float brightness = 1f - (0.1f * i);
+
+                Color c = stalkColor * brightness;
+                c.a = 1f;
+
+                segment.GetComponent<SpriteRenderer>().color = c;
+
+                segments.Add(segment);
+                segment.transform.parent = stalkHolder.transform;
+
+                // add z value based on j to ensure proper layering
+                Vector3 pos = segment.transform.position;
+                pos.z += i * 0.01f;
+                segment.transform.position = pos;
+
+                // update position and rotation for the next segment
+                currentPosition += currentRotation * Vector3.up * segment.transform.localScale.y * 0.95f;
+                float angleVariation = Mathf.Lerp(minSegmentAngleVariation, maxSegmentAngleVariation, parameters[segment_angle_variation]);
+                currentRotation *= Quaternion.Euler(0f, 0f, Random.Range(-angleVariation, angleVariation));
+            }
+
+            stalkSegments.Add(segments);
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            // for testing, regenerate the stalks with new random parameters
+            foreach (List<GameObject> stalk in stalkSegments)
+            {
+                foreach (GameObject segment in stalk)
+                {
+                    Destroy(segment);
+                }
+            }
+            stalkSegments.Clear();
+            for (int i = 0; i < segmentHolder.transform.childCount; i++)
+            {
+                Destroy(segmentHolder.transform.GetChild(i).gameObject);
+            }
+
+            Start();
+        }
     }
 
     public void createScore()
@@ -82,8 +187,9 @@ public class StalkGrow2 : MonoBehaviour
 
         parameters[stalk_length] = Random.Range(0f, 1f);
         parameters[stalk_width] = Random.Range(0f, 1f);
-        parameters[branch_angle] = Random.Range(0f, 1f);
-        parameters[branch_probability] = Random.Range(0f, 1f);
+        parameters[main_stalk_count] = Random.Range(0f, 1f);
         parameters[stalk_height] = Random.Range(0f, 1f);
+        parameters[segment_angle_variation] = Random.Range(0f, 1f);
+        parameters[start_stalk_angle] = Random.Range(0f, 1f);
     }
 }
