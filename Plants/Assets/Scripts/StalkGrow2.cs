@@ -13,10 +13,11 @@ public class StalkGrow2 : MonoBehaviour
     public const int stalk_color_value = 2;
     public const int stalk_length = 3; // the segment length
     public const int stalk_width = 4; // the segment width
-    public const int main_stalk_count = 5; // alays 1 to 3, or whatever
-    public const int stalk_height = 6; //stalk limit for each main stalk
+    public const int main_stalk_count = 5; // always 1 to 3, or whatever i choose
+    public const int stalk_height = 6; // stalk limit for each main stalk
     public const int segment_angle_variation = 7; // how much each segment can vary in angle, for more natural growth
     public const int start_stalk_angle = 8; // the angle of the first segment, for more variation in growth direction
+    public const int height_variation = 9; // main stalk variation
 
     [Header("Stalk Parameter Ranges")]
     public float minStalkLength = 0.5f;
@@ -31,9 +32,11 @@ public class StalkGrow2 : MonoBehaviour
     public float maxSegmentAngleVariation = 10f;
     public float minStartStalkAngle = -30f;
     public float maxStartStalkAngle = 30f;
+    public float minHeightVariation = 0f; // same height for all main stalks
+    public float maxHeightVariation = .5f; // up to 50% variation in height between main stalks
 
     [Header("Stalk Genetic Parameter List")]
-    private int paramDimension = 9;
+    private int paramDimension = 10;
     public float[] parameters;
 
     [Header("Generation")]
@@ -74,12 +77,31 @@ public class StalkGrow2 : MonoBehaviour
     public GameObject segmentHolder; // parent object to hold all the segments for organization, one for each list
     int stalkCount;
     Color stalkColor;
+    public int[] stalkHeights;
 
     [Header("Score Traits for STALK")]
     public float windResistanceScore; // stalk thickness and flexibility
     public float sunlightAbsorptionScore; // stalk length (more surface area = better for sunlight absorption)
     public float tempResistanceScore; // stalk color (darker green = better for more temperature resistance)
     public float stalkStrengthScore; // stalk length and width (longer and thicker stalks are stronger)
+
+    // these will guarantee flower at the end, no need for leaves at branches
+    [Header("Branch Parameters Constants")]
+    // color is the same as stalk color
+    public const int branch_length = 0;
+    public const int branch_angle = 1;
+    public const int branch_thickness = 2;
+    public const int branch_segment_count = 3;
+    public const int branch_distribution_bias = 4; // top or bottom bias, or even 0.5
+
+    [Header("Branch Parameter Ranges")]
+    public float minBranchLength = 0.5f;
+    public float maxBranchLength = 2f;
+
+    [Header("Branch Objects")]
+    public GameObject branchPrefab;
+    public int branchParamDimension = 5;
+    public float[] branchParameters;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -168,8 +190,13 @@ public class StalkGrow2 : MonoBehaviour
 
     public void createStalk()
     {
+        float heightVar = Mathf.Lerp(minHeightVariation, maxHeightVariation, parameters[height_variation]);
+
         stalkCount = Mathf.RoundToInt(minMainStalkCount 
         + parameters[main_stalk_count] * (maxMainStalkCount - minMainStalkCount));
+
+        stalkHeights = new int[stalkCount];
+        stalkHeights[0] = stalkCount; // since first is base
 
         // keep greenish
         float h = Mathf.Lerp(0.28f, 0.38f, parameters[stalk_color_hue]);
@@ -179,6 +206,8 @@ public class StalkGrow2 : MonoBehaviour
 
         int stalkHeight = Mathf.RoundToInt(minStalkHeight 
         + parameters[stalk_height] * (maxStalkHeight - minStalkHeight));
+
+        int stalkHeightVar = stalkHeight; // one stalk is always the base height
 
         float startAngle = Mathf.Lerp(minStartStalkAngle, maxStartStalkAngle, parameters[start_stalk_angle]);
 
@@ -212,7 +241,7 @@ public class StalkGrow2 : MonoBehaviour
             
 
             // create the main stalk segments
-            for (int j = 0; j < Mathf.RoundToInt(stalkHeight); j++)
+            for (int j = 0; j < stalkHeightVar; j++)
             {
                 GameObject segment = Instantiate(stalkPrefab, currentPosition, currentRotation);
                 segment.transform.localScale = new Vector3(
@@ -240,8 +269,13 @@ public class StalkGrow2 : MonoBehaviour
                 currentPosition += currentRotation * Vector3.up * segment.transform.localScale.y * 0.95f;
                 float angleVariation = Mathf.Lerp(minSegmentAngleVariation, maxSegmentAngleVariation, parameters[segment_angle_variation]);
                 currentRotation *= Quaternion.Euler(0f, 0f, Random.Range(-angleVariation, angleVariation));
-            }
 
+                
+            }
+            stalkHeights[i] = stalkHeightVar; // store for future use
+            
+            stalkHeightVar = stalkHeight; // reset
+            stalkHeightVar += Random.Range(-Mathf.RoundToInt(heightVar * stalkHeight), Mathf.RoundToInt(heightVar * stalkHeight) + 1);
             stalkSegments.Add(segments);
         }
         
@@ -299,6 +333,7 @@ public class StalkGrow2 : MonoBehaviour
         parameters[stalk_height] = Random.Range(0f, 1f);
         parameters[segment_angle_variation] = Random.Range(0f, 1f);
         parameters[start_stalk_angle] = Random.Range(0f, 1f);
+        parameters[height_variation] = Random.Range(0f, 1f);
 
         leafParameters = new float[leafParamDimension];
         leafParameters[leaf_color_hue] = Random.Range(0f, 1f);
@@ -309,5 +344,13 @@ public class StalkGrow2 : MonoBehaviour
 
         // 0 is near bottom, 1 is near top
         leafParameters[leaf_distribution_bias] = Random.Range(0f, 1f);
+
+        // brnach
+        branchParameters = new float[branchParamDimension];
+        branchParameters[branch_length] = Random.Range(0f, 1f);
+        branchParameters[branch_angle] = Random.Range(0f, 1f);
+        branchParameters[branch_thickness] = Random.Range(0f, 1f);
+        branchParameters[branch_segment_count] = Random.Range(0f, 1f);
+        branchParameters[branch_distribution_bias] = Random.Range(0f, 1f);
     }
 }
