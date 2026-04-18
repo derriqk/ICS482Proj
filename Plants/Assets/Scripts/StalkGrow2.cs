@@ -90,13 +90,14 @@ public class StalkGrow2 : MonoBehaviour
     // color is the same as stalk color
     public const int branch_length = 0;
     public const int branch_angle = 1;
-    public const int branch_thickness = 2;
+    public const int branch_thickness = 2; // percentage of the main stalk thickness
     public const int branch_segment_count = 3;
     public const int branch_distribution_bias = 4; // top or bottom bias, or even 0.5
 
     [Header("Branch Parameter Ranges")]
     public float minBranchLength = 0.5f;
     public float maxBranchLength = 2f;
+    
 
     [Header("Branch Objects")]
     public GameObject branchPrefab;
@@ -112,7 +113,42 @@ public class StalkGrow2 : MonoBehaviour
 
     public void createBranches()
     {
-        
+        Color branchColor = stalkColor; // same for now
+
+        float length = Mathf.Lerp(minBranchLength, maxBranchLength, branchParameters[branch_length]);
+        float thickness = parameters[stalk_width] * branchParameters[branch_thickness]; // never exceeds 
+
+        float angle = 45f; // base 45
+
+        if (Random.value > 0.5f) angle *= -1f; // randomize left or right
+        if (Random.value > 0.5f) angle += 10*branchParameters[branch_angle]; else angle -= 10*branchParameters[branch_angle];
+
+        // now for each stalk, loop through distribution
+        for (int i = 0; i < stalkCount; i++)
+        {
+            List<GameObject> segments = stalkSegments[i];
+            int index = 0;
+            foreach (GameObject segment in segments)
+            {
+                float t = (float)index / (segments.Count - 1);
+
+                float bias = Mathf.Lerp(-1f, 1f, branchParameters[branch_distribution_bias]);
+
+                float chance = (bias >= 0)
+                    ? Mathf.Pow(t, 1f + bias * 4f)
+                    : Mathf.Pow(1f - t, 1f + (-bias) * 4f);
+
+                if (Random.value > chance)
+                {
+                    index++;
+                    continue;
+                }
+                index++;
+
+                // only apply after chance
+
+            }
+        }
     }
     public void createLeavesAtStalk()
     {
@@ -203,6 +239,9 @@ public class StalkGrow2 : MonoBehaviour
         float s = Mathf.Lerp(0.6f, 1.0f, parameters[stalk_color_saturation]);
         float v = Mathf.Lerp(0.4f, 0.9f, parameters[stalk_color_value]);
         stalkColor = Color.HSVToRGB(h, s, v);
+        
+        float width = Mathf.Lerp(minStalkWidth, maxStalkWidth, parameters[stalk_width]);
+        float length = Mathf.Lerp(minStalkLength, maxStalkLength, parameters[stalk_length]);
 
         int stalkHeight = Mathf.RoundToInt(minStalkHeight 
         + parameters[stalk_height] * (maxStalkHeight - minStalkHeight));
@@ -245,8 +284,8 @@ public class StalkGrow2 : MonoBehaviour
             {
                 GameObject segment = Instantiate(stalkPrefab, currentPosition, currentRotation);
                 segment.transform.localScale = new Vector3(
-                    Mathf.Lerp(minStalkWidth, maxStalkWidth, parameters[stalk_width]),
-                    Mathf.Lerp(minStalkLength, maxStalkLength, parameters[stalk_length]),
+                    width * Mathf.Pow(percentageShrink, j),
+                    length, // length stay
                     1f
                 );
 
@@ -349,7 +388,7 @@ public class StalkGrow2 : MonoBehaviour
         branchParameters = new float[branchParamDimension];
         branchParameters[branch_length] = Random.Range(0f, 1f);
         branchParameters[branch_angle] = Random.Range(0f, 1f);
-        branchParameters[branch_thickness] = Random.Range(0f, 1f);
+        branchParameters[branch_thickness] = Random.Range(.2f, 1f);
         branchParameters[branch_segment_count] = Random.Range(0f, 1f);
         branchParameters[branch_distribution_bias] = Random.Range(0f, 1f);
     }
