@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+
 // FINAL SCRIPT, ignore flowerscript, growth1, stalkgrower
 public class FinalPlant : MonoBehaviour
 {
@@ -143,14 +144,102 @@ public class FinalPlant : MonoBehaviour
     public float waterStressScore; // flower count contributes to water stress, more flowers means more water needed, but also contributes to pollinator attract score, so there's a balance there
     public float lightCompetitionScore; // height and leaf area and darker greens
 
+    public WorldHandlerFinal worldHandler; // reference to world handler to update score
+    public int index; // index in world handler plant list, for score updating
+    public float[] seed; // size is sum of dimensions
+    public float mutationRate;
+    public float deviationAmount;
+
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
+    {
+        randomGeneration();
+    }
+
+    public void randomGeneration()
     {
         initRandomParam();
         createFlowerTemplate();
         createStalk();
         calculateScore();
+        worldHandler.EvalScore(this, index); // update score in world handler after calculating
+    }
+
+    public void seededGeneration(float[] parent1, float[] parent2)
+    {
+        randomPercentageGenes(parent1, parent2);
+        mutate();
+        initParamsFromSeed();
+        clearPlant();
+        createFlowerTemplate();
+        createStalk();
+        calculateScore();
+        worldHandler.EvalScore(this, index); // update score in world handler after calculating
+    }
+
+    public void mutate()
+    {
+        for (int i = 0; i < seed.Length; i++)
+        {
+            if (Random.value < mutationRate)
+            {
+                seed[i] += Random.Range(-deviationAmount, deviationAmount);
+                seed[i] = Mathf.Clamp01(seed[i]);
+            }
+        }
+    }
+
+    public void randomPercentageGenes(float[] parent1, float[] parent2)
+    {
+        //seed = new float[paramDimension + leafParamDimension + branchParamDimension + flowerParamDimension];
+
+        for (int i = 0; i < paramDimension; i++)
+        {
+            float percentage = Random.Range(0f, 1f);
+            seed[i] = (parent1[i] * percentage) + (parent2[i] * (1f - percentage));
+        }
+
+        for (int i = paramDimension; i < paramDimension + leafParamDimension; i++)
+        {
+            float percentage = Random.Range(0f, 1f);
+            seed[i] = (parent1[i] * percentage) + (parent2[i] * (1f - percentage));
+        }
+
+        for (int i = paramDimension + leafParamDimension; i < paramDimension + leafParamDimension + branchParamDimension; i++)
+        {
+            float percentage = Random.Range(0f, 1f);
+            seed[i] = (parent1[i] * percentage) + (parent2[i] * (1f - percentage));
+        }
+
+        for (int i = paramDimension + leafParamDimension + branchParamDimension; i < paramDimension + leafParamDimension + branchParamDimension + flowerParamDimension; i++)
+        {
+            float percentage = Random.Range(0f, 1f);
+            seed[i] = (parent1[i] * percentage) + (parent2[i] * (1f - percentage));
+        }
+    }
+
+    public void initParamsFromSeed()
+    {
+        for (int i = 0; i < paramDimension; i++)
+        {
+            parameters[i] = seed[i];
+        }
+
+        for (int i = paramDimension; i < paramDimension + leafParamDimension; i++)
+        {
+            leafParameters[i - paramDimension] = seed[i];
+        }
+
+        for (int i = paramDimension + leafParamDimension; i < paramDimension + leafParamDimension + branchParamDimension; i++)
+        {
+            branchParameters[i - paramDimension - leafParamDimension] = seed[i];
+        }
+
+        for (int i = paramDimension + leafParamDimension + branchParamDimension; i < paramDimension + leafParamDimension + branchParamDimension + flowerParamDimension; i++)
+        {
+            flowerParameters[i - paramDimension - leafParamDimension - branchParamDimension] = seed[i];
+        }
     }
 
     public void calculateScore()
@@ -158,17 +247,17 @@ public class FinalPlant : MonoBehaviour
         // just weighted sums that add to 1 based on priority
         windResistanceScore =
         (parameters[stalk_width] * 0.2f) +
-        (flowerParameters[petal_length] * 0.4f) + // shorter petals are more resistant to wind damage
-        (flowerParameters[total_layers] * 0.3f) + // more layers better
-        (branchParameters[branch_thickness] * 0.1f);
+        (flowerParameters[petal_length] * 0.2f) +
+        (flowerParameters[total_layers] * 0.3f) +
+        (branchParameters[branch_thickness] * 0.1f) +
+        (parameters[stalk_height] * -0.4f);
 
-        // values good greens and bigger leaves
-        sunlightAbsorptionScore =
-        (parameters[stalk_color_saturation] * 0.15f) +
-        (parameters[stalk_color_value] * 0.1f) +
-        (leafParameters[leaf_color_saturation] * 0.2f) +
-        (leafParameters[leaf_color_value] * 0.15f) +
-        (leafParameters[leaf_length] * leafParameters[leaf_width] * 0.4f); // leaf area
+        float optimalGreen = worldHandler.sunScore; // or inverted depending on your design
+        float greenMismatch =
+            Mathf.Abs(parameters[stalk_color_value] - optimalGreen);
+
+        float sunlightAbsorptionScore =
+        1f - greenMismatch;
 
         // smaller petals and more layers
         float biasScore = 1f - Mathf.Abs(leafParameters[leaf_distribution_bias] - 0.5f) / 0.5f;
@@ -196,8 +285,8 @@ public class FinalPlant : MonoBehaviour
 
         // brighter bigger flowers
         pollinatorAttractScore = 
-        (flowerParameters[petal_length] * 0.25f) + 
-        (flowerParameters[flower_color_Saturation] * 0.25f) + 
+        (flowerParameters[petal_length] * 0.15f) + 
+        (flowerParameters[flower_color_Saturation] * 0.45f) + 
         (flowerParameters[flower_color_Value] * 0.4f); 
 
         // better at remove water
@@ -485,7 +574,9 @@ public class FinalPlant : MonoBehaviour
                 // make leaf shrink as it goes up the stalk, for more natural look
                 leaf.transform.localScale *= Mathf.Lerp(1f, 0.25f, (float)index / segments.Count);
 
-                float brightness = 1f - (0.01f * i * index);
+                float brightness = 1f - (0.02f * i * index);
+
+                if (brightness < 0.3f) brightness = 0.3f; // ensure minimum brightness for visibility
 
                 Color c = leafColor * brightness;
                 c.a = 1f;
@@ -609,47 +700,40 @@ public class FinalPlant : MonoBehaviour
         createFlowers();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void clearPlant()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        foreach (List<GameObject> stalk in stalkSegments)
         {
-            // for testing, regenerate the stalks with new random parameters
-            foreach (List<GameObject> stalk in stalkSegments)
+            foreach (GameObject segment in stalk)
             {
-                foreach (GameObject segment in stalk)
-                {
-                    Destroy(segment);
-                }
+                Destroy(segment);
             }
-            for (int i = 0; i < leafHolder.transform.childCount; i++)
-            {
-                Destroy(leafHolder.transform.GetChild(i).gameObject);
-            }
-            stalkSegments.Clear();
-            for (int i = 0; i < segmentHolder.transform.childCount; i++)
-            {
-                Destroy(segmentHolder.transform.GetChild(i).gameObject);
-            }
-
-            centers.Clear();
-            for (int i = 0; i < flowerHolder.transform.childCount; i++)
-            {
-                Destroy(flowerHolder.transform.GetChild(i).gameObject);
-            }
-
-            // clear flower template petals inside first child
-            for (int i = 0; i < flowerTemplate.transform.GetChild(0).childCount; i++)
-            {
-                Destroy(flowerTemplate.transform.GetChild(0).GetChild(i).gameObject);
-            }
-            Destroy(flowerTemplate.transform.GetChild(0).gameObject);
-
-            flowerCount = 0;
-            leafCount = 0;
-
-            Start();
         }
+        for (int i = 0; i < leafHolder.transform.childCount; i++)
+        {
+            Destroy(leafHolder.transform.GetChild(i).gameObject);
+        }
+        stalkSegments.Clear();
+        for (int i = 0; i < segmentHolder.transform.childCount; i++)
+        {
+            Destroy(segmentHolder.transform.GetChild(i).gameObject);
+        }
+
+        centers.Clear();
+        for (int i = 0; i < flowerHolder.transform.childCount; i++)
+        {
+            Destroy(flowerHolder.transform.GetChild(i).gameObject);
+        }
+
+        // clear flower template petals inside first child
+        for (int i = 0; i < flowerTemplate.transform.GetChild(0).childCount; i++)
+        {
+            Destroy(flowerTemplate.transform.GetChild(0).GetChild(i).gameObject);
+        }
+        Destroy(flowerTemplate.transform.GetChild(0).gameObject);
+
+        flowerCount = 0;
+        leafCount = 0;
     }
 
     public void initRandomParam()
@@ -700,5 +784,11 @@ public class FinalPlant : MonoBehaviour
         flowerParameters[petal_count] = Random.Range(0f, 1f);
         flowerParameters[total_layers] = Random.Range(0f, 1f);
         flowerParameters[energy] = Random.Range(0f, 1f);
+
+        seed = new float[paramDimension + leafParamDimension + branchParamDimension + flowerParamDimension];
+        parameters.CopyTo(seed, 0);
+        leafParameters.CopyTo(seed, paramDimension);
+        branchParameters.CopyTo(seed, paramDimension + leafParamDimension);
+        flowerParameters.CopyTo(seed, paramDimension + leafParamDimension + branchParamDimension);
     }
 }

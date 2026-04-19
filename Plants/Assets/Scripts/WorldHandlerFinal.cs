@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class WorldHandlerFinal : MonoBehaviour
 {
@@ -17,6 +18,13 @@ public class WorldHandlerFinal : MonoBehaviour
     public float windSpeed = 0;
     public float rain_Level = 0;
     public float pollinator_Level = 0;
+
+    // used to generate next (season), can lerp
+    private float nextTemp;
+    private float nextSun;
+    private float nextWind;
+    private float nextRain;
+    private float nextPollinator;
 
     // actual 0-1 scaled 
     [Header("State Level Normalized: Score")]
@@ -40,6 +48,7 @@ public class WorldHandlerFinal : MonoBehaviour
 
     [Header("Plant List")]
     public GameObject[] plantList; // list of plants
+    public FinalPlant[] plantScripts; // list of plant scripts for easy access to parameters and fitness scores
     public GameObject plantPrefab; // prefab for instantiating new plants
     public GameObject plantParent; // parent object for plants
 
@@ -47,29 +56,137 @@ public class WorldHandlerFinal : MonoBehaviour
     public GameObject locationParent; // parent object for plant locations
     public GameObject[] locationList; // list of locations for plants to grow
 
+    [Header("Generation Control")]
+    public float[] fitnessScores; // list of fitness scores for each plant
+    public int best1Index; // index of best plant
+    public float[] best1seed;
+    public int best2Index; // index of second best plant
+    public float[] best2seed;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        int count = locationParent.transform.childCount;
+        fitnessScores = new float[count];
+        plantList = new GameObject[count];
+        plantScripts = new FinalPlant[count];
         locationSetup();
         setWorldState();
-        GeneratePlants();
+        GeneratePlants(); // first gen is always random
+        StartCoroutine(getBestPlants(1f)); 
     }
 
     // Update is called once per frame
     void Update()
     {
+        // resets generation
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            setWorldState();
+            refreshPlants();
+        }
+
+        // next gen
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            //setWorldState();
+            NextGeneration();
+        }
+    }
+
+    private IEnumerator getBestPlants(float delay)
+    {
+        // first time is always 2f
+        yield return new WaitForSeconds(delay);
+        // find best and second best plant indices
+        float best1Score = float.MinValue;
+        float best2Score = float.MinValue;
+
+        for (int i = 0; i < fitnessScores.Length; i++)
+        {
+            if (fitnessScores[i] > best1Score)
+            {
+                best2Score = best1Score;
+                best2Index = best1Index;
+                best1Score = fitnessScores[i];
+                best1Index = i;
+            }
+            else if (fitnessScores[i] > best2Score)
+            {
+                best2Score = fitnessScores[i];
+                best2Index = i;
+            }
+        }
         
+        // Debug.Log(best1Index);
+        // Debug.Log(best2Index);
+        best1seed = new float[plantScripts[best1Index].seed.Length];
+        best2seed = new float[plantScripts[best2Index].seed.Length];
+        copyArray(plantScripts[best1Index].seed, best1seed);
+        copyArray(plantScripts[best2Index].seed, best2seed);
+
+    }
+
+    public void copyArray(float[] source, float[] destination)
+    {
+        for (int i = 0; i < source.Length; i++)
+        {
+            destination[i] = source[i];
+        }
+    }
+
+    // using script and now world states to get overall score
+    public void EvalScore(FinalPlant p, int i)
+    {
+        //Debug.Log(p.flowerCount);
+
+        float overallScore =
+        windScore * (p.windResistanceScore + p.stabilityScore) +
+        sunScore * (p.sunlightAbsorptionScore + p.lightCompetitionScore) +
+        tempScore * p.tempResistanceScore +
+        rainScore * (p.waterSheddingScore + p.waterStressScore + p.energyStressScore) +
+        pollinatorScore * p.pollinatorAttractScore;
+
+        fitnessScores[i] = overallScore;
+    }
+
+    public void refreshPlants()
+    {
+        for (int i = 0; i < plantList.Length; i++)
+        {
+            plantScripts[i].clearPlant();
+            plantScripts[i].randomGeneration();
+        }
+
+        StartCoroutine(getBestPlants(0f)); 
     }
 
     public void GeneratePlants()
     {
-        plantList = new GameObject[locationList.Length];
+        int startZ = locationList.Length * -1;
+        
         for (int i = 0; i < locationList.Length; i++)
         {
             GameObject newPlant = Instantiate(plantPrefab, locationList[i].transform.position, Quaternion.identity);
             plantList[i] = newPlant;
+            plantScripts[i] = newPlant.GetComponent<FinalPlant>();
+            plantScripts[i].worldHandler = this; // set reference to world handler in plant script
+            plantScripts[i].index = i; // set index in plant script for score updating
             newPlant.transform.parent = plantParent.transform;
+            Vector3 pos = newPlant.transform.position;
+            pos.z = startZ + i;
+            newPlant.transform.position = pos;
         }
+    }
+
+    public void NextGeneration()
+    {
+        for (int i = 0; i < plantList.Length; i++)
+        {
+            plantScripts[i].seededGeneration(best1seed, best2seed);
+        }
+
+        StartCoroutine(getBestPlants(0f));
     }
 
     public void setWorldState()
@@ -136,5 +253,35 @@ public class WorldHandlerFinal : MonoBehaviour
         // amount of pollinators in the area, based on number of pollinator visits per day
         minPollinator = 1.0f;
         maxPollinator = 50.0f;
+    }
+
+    private void generateSummer()
+    {
+        nextTemp = Random.Range(
+            Mathf.Lerp(minTemp, maxTemp, 0.6f),
+            maxTemp
+        );
+
+        nextSun = Random.Range(
+            Mathf.Lerp(minSun, maxSun, 0.5f),
+            maxSun
+        );
+
+        nextWind = Random.Range(
+            Mathf.Lerp(minWind, maxWind, 0.2f),
+            Mathf.Lerp(minWind, maxWind, 0.6f)
+        );
+
+        nextRain = Random.Range(
+            Mathf.Lerp(minRain, maxRain, 0.3f),
+            Mathf.Lerp(minRain, maxRain, 0.8f)
+        );
+
+        nextPollinator = Random.Range(
+            Mathf.Lerp(minPollinator, maxPollinator, 0.5f),
+            maxPollinator
+        );
+
+        normalizeWorldStates();
     }
 }

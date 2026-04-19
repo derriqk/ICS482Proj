@@ -198,6 +198,11 @@ MonoBehaviour:
   energyStressScore: 0
   waterStressScore: 0
   lightCompetitionScore: 0
+  worldHandler: {fileID: 0}
+  index: 0
+  seed: []
+  mutationRate: 0.1
+  deviationAmount: 0.5
 --- !u!212 &1439887204475043344
 SpriteRenderer:
   m_ObjectHideFlags: 0
