@@ -1,11 +1,16 @@
 using UnityEngine;
 using System.Collections.Generic;
-
+// FINAL SCRIPT, ignore flowerscript, growth1, stalkgrower
 public class StalkGrow2 : MonoBehaviour
 {
     // this script handles the stalk parameter space growth for my project
     // its intended to grow and branch based on parameters
     // at the end of each stalk it will instantiate the flower 
+
+    public float[] flowerParameters;
+    public float[] parameters;
+    public float[] leafParameters;
+    public float[] branchParameters;
 
     [Header("Stalk Parameter Constants")]
     public const int stalk_color_hue = 0;
@@ -38,13 +43,6 @@ public class StalkGrow2 : MonoBehaviour
 
     [Header("Stalk Genetic Parameter List")]
     private int paramDimension = 11;
-    public float[] parameters;
-
-    [Header("Generation")]
-    public string seed;
-    public string useSeed = "";    
-    public float mutationRate; // chance for each gene to mutate when creating a new generation
-    public float deviation; // how much a gene can change when it mutates, as a percentage of the total range of that gene
 
     [Header ("Leaf Parameters Constants")]
     public const int leaf_color_hue = 0;
@@ -62,7 +60,6 @@ public class StalkGrow2 : MonoBehaviour
 
     [Header ("Leaf Genetic Parameter List")]
     private int leafParamDimension = 6;
-    public float[] leafParameters;
 
     [Header("Leaf Objects")]
     public GameObject leafPrefab;
@@ -81,12 +78,6 @@ public class StalkGrow2 : MonoBehaviour
     public int[] stalkHeights;
     float mainwidth;
 
-    [Header("Score Traits for STALK")]
-    public float windResistanceScore; // stalk thickness and flexibility
-    public float sunlightAbsorptionScore; // stalk length (more surface area = better for sunlight absorption)
-    public float tempResistanceScore; // stalk color (darker green = better for more temperature resistance)
-    public float stalkStrengthScore; // stalk length and width (longer and thicker stalks are stronger)
-
     // these will guarantee flower at the end, no need for leaves at branches
     [Header("Branch Parameters Constants")]
     // color is the same as stalk color
@@ -95,6 +86,7 @@ public class StalkGrow2 : MonoBehaviour
     public const int branch_thickness = 2; // percentage of the main stalk thickness
     public const int branch_segment_count = 3;
     public const int branch_distribution_bias = 4; // top or bottom bias, or even 0.5
+    public const int branch_symmetry = 5; // contributes to balance
 
     [Header("Branch Parameter Ranges")]
     public float minBranchLength;
@@ -102,18 +94,148 @@ public class StalkGrow2 : MonoBehaviour
     public float minBranchThickness;
     public float maxBranchThickness;
     
-
     [Header("Branch Objects")]
     public GameObject branchPrefab;
-    public int branchParamDimension = 5;
-    public float[] branchParameters;
+    private int branchParamDimension = 6;
     public int branchCount = 0;
+
+    [Header("Flower Parameter Constants")]
+    public const int flower_color_Hue = 0; // HSV hue
+    public const int flower_color_Saturation = 1; // HSV saturation
+    public const int flower_color_Value = 2; // HSV value
+    public const int petal_length = 3; // length of the petal
+    public const int petal_width = 4; // width of the petal
+    public const int petal_count = 5; // number of petals
+    public const int total_layers = 6; // total layers of petals, including the inner layer
+    public const int energy = 7; // affects shrinkage of flower as more are made, also contributes to score
+
+    [Header("Flower Parameter Ranges")]
+    public int minPetalCount = 8; // minimum number of petals to ensure the flower is visible
+    public int maxPetalCount = 20; // maximum number of petals to prevent performance issues
+    public int maxLayers = 5; // maximum number of layers 
+    public int minLayers = 2; // minimum number of layers 
+    public float minPetalLength = 1.5f;
+    public float maxPetalLength = 5f;
+    public float minPetalWidth = 1f;
+    public float maxPetalWidth = 3f;
+
+    [Header("Flower Genetic Parameter List")]
+    private int flowerParamDimension = 8;
+
+    [Header("Flower Objects")]
+    public GameObject centerPrefab;
+    public List<GameObject> centers = new List<GameObject>(); // will add at each end of branch and stalk
+    public GameObject petalPrefab;
+    public GameObject flowerHolder; 
+    public GameObject flowerTemplate;
+    public int flowerCount = 0;
+    Color flowerColor;
+
+    [Header("Score Traits for STALK")]
+    public float stalk_windResistanceScore; // stalk thickness and flexibility
+    public float stalk_sunlightAbsorptionScore; // stalk length (more surface area = better for sunlight absorption)
+    public float stalk_tempResistanceScore; // stalk color (darker green = better for more temperature resistance)
+    public float stalk_strengthScore; // stalk length and width (longer and thicker stalks are stronger)
+
+    [Header("Score Traits for FLOWER")]
+    public float flow_pollinatorAttractScore; // petal length and color brightness
+    public float flow_tempResistanceScore; // petal width and layers (more width and layers = more insulation)
+    public float flow_windResistanceScore; // petal length and layers (shorter petals and more layers = less likely to be damaged by wind)
+    public float flow_waterSheddingScore; // petal width and layers (wider petals and more layers = better at shedding water to prevent mold)
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         initRandomParam();
+        createFlowerTemplate();
         createStalk();
+    }
+
+    public void createFlowerTemplate()
+    {
+        flowerTemplate = new GameObject("FlowerTemplate");
+        flowerTemplate.transform.parent = flowerHolder.transform;
+        flowerTemplate.SetActive(false); // hide
+
+        GameObject center = Instantiate(centerPrefab, Vector3.zero, Quaternion.identity);
+        center.transform.parent = flowerTemplate.transform;
+
+        flowerColor = Color.HSVToRGB(parameters[flower_color_Hue], parameters[flower_color_Saturation], parameters[flower_color_Value]);
+
+        float petalWidth = parameters[petal_width] * (maxPetalWidth - minPetalWidth) + minPetalWidth;
+        float petalLength = parameters[petal_length] * (maxPetalLength - minPetalLength) + minPetalLength;
+
+        float petalCount = Mathf.Ceil(parameters[petal_count] * (maxPetalCount - minPetalCount) + minPetalCount); // scale petal count to be between min and max
+
+        float angleBetweenPetals = 360f / petalCount;
+
+        int layers = Mathf.Max(minLayers, (int) Mathf.Ceil(maxLayers * parameters[total_layers]));
+
+        Vector3 pos = center.transform.position;
+        pos.z = -1f;
+        center.transform.position = pos;
+        center.GetComponent<SpriteRenderer>().color = flowerColor * .2f;
+            
+        // get length of center, then make petal length minimum of 1.5 times the center length to ensure petals are long enough to be visible
+        float centerLength_X = center.GetComponent<SpriteRenderer>().bounds.size.x;
+
+        for (int j = 0; j < layers; j++)
+        {
+            for (int i = 0; i < petalCount; i++)
+            {
+                GameObject petal = Instantiate(petalPrefab, center.transform.position, Quaternion.identity);
+                petal.transform.SetParent(center.transform);
+
+                petal.transform.localScale = new Vector3(petalWidth - (.2f * petalWidth * j), petalLength - (.4f * petalLength * j), 1f); // scale down each layer
+                petal.transform.Rotate(0f, 0f, i * angleBetweenPetals + (j * angleBetweenPetals / 2)); // rotate each layer of petals to be in between the previous layer
+                petal.GetComponent<SpriteRenderer>().color = flowerColor;
+                    
+                // make each layer a bit darker than the previous layer to create depth
+                petal.GetComponent<SpriteRenderer>().color *= 1f - (0.1f * j); // darken each layer by 10%
+
+                // make z in front of center
+                petal.transform.localPosition = new Vector3(0f, 0f, 1f - (0.1f * j)); // ensure petals are in front of the center, and each     
+            }
+        }
+    }
+
+    public void createFlowers()
+    {
+        int index = 0;
+        foreach(GameObject center in centers)
+        {
+            // scale dies down as more are made
+            // determined by flower energy
+            // energy can reduce scale by up to 50%, and each flower reduces scale by 5%
+            float scale = 1f - (parameters[energy] * 0.5f) - (flowerCount * 0.05f); 
+            center.GetComponent<SpriteRenderer>().color = flowerColor;
+            float sizeScale;
+            if (index < 40)
+            {
+                sizeScale = 1f - (index * 0.02f); 
+            } else
+            {
+                sizeScale = 0.2f;
+            }
+            if (scale <= .2f)
+            {
+                // keep as bud
+                center.transform.localScale = new Vector3(2f, 2f, 1f) * sizeScale;
+                index++;
+                continue;
+            }
+            
+            GameObject flower = Instantiate(flowerTemplate, center.transform.position, Quaternion.identity);
+            flower.transform.parent = flowerHolder.transform;
+            flower.SetActive(true);
+
+            
+            flower.transform.localScale = new Vector3(scale, scale, 1f);
+
+            // use for score
+            flowerCount++;
+            index++;
+        }
     }
 
     public void createBranches()
@@ -176,16 +298,54 @@ public class StalkGrow2 : MonoBehaviour
                 Color c = branchColor * (1f - (0.1f * i));
                 c.a = 1f;
 
+                Vector3 right = segment.transform.right * thickness * 0.5f;
+
+                if (Random.value > branchParameters[branch_symmetry])
+                {
+                    // spawn another branch on the opposite side for more symmetry
+                    Quaternion oppositeRot = segment.transform.rotation *
+                    Quaternion.Euler(0f, 0f, -angle);
+                    GameObject oppositeBranch = Instantiate(branchPrefab, spawnPos, oppositeRot);
+                    oppositeBranch.transform.localScale = new Vector3(newThickness, currLenght * .5f , 1f);
+                    oppositeBranch.GetComponent<SpriteRenderer>().color = c;
+                    oppositeBranch.transform.parent = segmentHolder.transform;
+                    
+                    if (angle > 0)
+                    {
+                        oppositeBranch.transform.position += right;
+                    }
+                    else
+                    {
+                        oppositeBranch.transform.position -= right;
+                    }
+
+                    branchCount++;
+
+                    // take branches child and add it to center since branches have inherent flowercenter at end
+                    GameObject center = oppositeBranch.transform.GetChild(0).gameObject;
+                    center.transform.parent = flowerHolder.transform;
+                    centers.Add(center);
+                    // reset center scale
+                    center.transform.localScale = Vector3.one * 0.5f;
+                }
+
                 branch.GetComponent<SpriteRenderer>().color = c;
                 branch.transform.parent = segmentHolder.transform;
-                Vector3 right = segment.transform.right * thickness * 0.5f;
-                if (angle > 0)                {
+
+                if (angle > 0)
+                {
                     branch.transform.position -= right;
                 }
                 else
                 {
                     branch.transform.position += right;
                 }
+
+                GameObject center2 = branch.transform.GetChild(0).gameObject;
+                center2.transform.parent = flowerHolder.transform;
+                centers.Add(center2);
+                // reset center scale
+                center2.transform.localScale = Vector3.one * 0.5f;
 
                 branchCount++;
             }
@@ -251,7 +411,7 @@ public class StalkGrow2 : MonoBehaviour
                 // make leaf shrink as it goes up the stalk, for more natural look
                 leaf.transform.localScale *= Mathf.Lerp(1f, 0.25f, (float)index / segments.Count);
 
-                float brightness = 1f - (0.1f * i * index);
+                float brightness = 1f - (0.01f * i * index);
 
                 Color c = leafColor * brightness;
                 c.a = 1f;
@@ -355,7 +515,13 @@ public class StalkGrow2 : MonoBehaviour
 
                 currentRotation *= Quaternion.Euler(0f, 0f, dir * angleVariation);
 
-                
+                // check for final segment to add flower
+                if (j == stalkHeightVar - 1)
+                {
+                    GameObject center = Instantiate(centerPrefab, currentPosition, Quaternion.identity);
+                    centers.Add(center);
+                    center.transform.parent = segmentHolder.transform; 
+                }
             }
             stalkHeights[i] = stalkHeightVar; // store for future use
             
@@ -366,6 +532,7 @@ public class StalkGrow2 : MonoBehaviour
         
         createLeavesAtStalk();
         createBranches();
+        createFlowers();
     }
 
     // Update is called once per frame
@@ -390,6 +557,22 @@ public class StalkGrow2 : MonoBehaviour
             {
                 Destroy(segmentHolder.transform.GetChild(i).gameObject);
             }
+
+            centers.Clear();
+            for (int i = 0; i < flowerHolder.transform.childCount; i++)
+            {
+                Destroy(flowerHolder.transform.GetChild(i).gameObject);
+            }
+
+            // clear flower template petals inside first child
+            for (int i = 0; i < flowerTemplate.transform.GetChild(0).childCount; i++)
+            {
+                Destroy(flowerTemplate.transform.GetChild(0).GetChild(i).gameObject);
+            }
+            Destroy(flowerTemplate.transform.GetChild(0).gameObject);
+
+            flowerCount = 0;
+            leafCount = 0;
 
             Start();
         }
@@ -439,5 +622,18 @@ public class StalkGrow2 : MonoBehaviour
         branchParameters[branch_thickness] = Random.Range(.2f, 1f);
         branchParameters[branch_segment_count] = Random.Range(0f, 1f);
         branchParameters[branch_distribution_bias] = Random.Range(0f, 1f);
+        branchParameters[branch_symmetry] = Random.Range(0f, 1f);
+
+        flowerParameters = new float[flowerParamDimension];
+        flowerParameters[flower_color_Hue] = Random.Range(0f, 1f);
+        flowerParameters[flower_color_Saturation] = Random.Range(0f, 1f);
+        flowerParameters[flower_color_Value] = Random.Range(0f, 1f);
+
+        // length will be for sunlight absorb fitness
+        flowerParameters[petal_length] = Random.Range(0f, 1f);
+        flowerParameters[petal_width] = Random.Range(0f, 1f);
+        flowerParameters[petal_count] = Random.Range(0f, 1f);
+        flowerParameters[total_layers] = Random.Range(0f, 1f);
+        flowerParameters[energy] = Random.Range(0f, 1f);
     }
 }
