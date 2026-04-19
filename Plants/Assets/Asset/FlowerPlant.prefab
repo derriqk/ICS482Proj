@@ -201,8 +201,8 @@ MonoBehaviour:
   worldHandler: {fileID: 0}
   index: 0
   seed: []
-  mutationRate: 0.1
-  deviationAmount: 0.5
+  mutationRate: 0.2
+  deviationAmount: 0.4
 --- !u!212 &1439887204475043344
 SpriteRenderer:
   m_ObjectHideFlags: 0
