@@ -281,7 +281,89 @@ public class WorldHandlerFinal : MonoBehaviour
             Mathf.Lerp(minPollinator, maxPollinator, 0.5f),
             maxPollinator
         );
+    }
 
-        normalizeWorldStates();
+    private void generateWinter()
+    {
+        nextTemp = Random.Range(
+            minTemp,
+            Mathf.Lerp(minTemp, maxTemp, 0.3f)
+        );
+
+        nextSun = Random.Range(
+            minSun,
+            Mathf.Lerp(minSun, maxSun, 0.4f)
+        );
+
+        nextWind = Random.Range(
+            Mathf.Lerp(minWind, maxWind, 0.4f),
+            maxWind
+        );
+
+        nextRain = Random.Range(
+            minRain,
+            Mathf.Lerp(minRain, maxRain, 0.5f)
+        );
+
+        nextPollinator = Random.Range(
+            minPollinator,
+            Mathf.Lerp(minPollinator, maxPollinator, 0.4f)
+        );
+}
+
+    private void generateSpring()
+    {
+        nextTemp = Random.Range(
+            Mathf.Lerp(minTemp, maxTemp, 0.4f),
+            Mathf.Lerp(minTemp, maxTemp, 0.7f)
+        );
+
+        nextSun = Random.Range(
+            Mathf.Lerp(minSun, maxSun, 0.5f),
+            Mathf.Lerp(minSun, maxSun, 0.8f)
+        );
+
+        nextWind = Random.Range(
+            Mathf.Lerp(minWind, maxWind, 0.2f),
+            Mathf.Lerp(minWind, maxWind, 0.5f)
+        );
+
+        nextRain = Random.Range(
+            Mathf.Lerp(minRain, maxRain, 0.4f),
+            Mathf.Lerp(minRain, maxRain, 0.8f)
+        );
+
+        nextPollinator = Random.Range(
+            Mathf.Lerp(minPollinator, maxPollinator, 0.6f),
+            maxPollinator
+        );
+    }
+
+    private void generateFall()
+    {
+        nextTemp = Random.Range(
+            Mathf.Lerp(minTemp, maxTemp, 0.3f),
+            Mathf.Lerp(minTemp, maxTemp, 0.6f)
+        );
+
+        nextSun = Random.Range(
+            Mathf.Lerp(minSun, maxSun, 0.4f),
+            Mathf.Lerp(minSun, maxSun, 0.7f)
+        );
+
+        nextWind = Random.Range(
+            Mathf.Lerp(minWind, maxWind, 0.3f),
+            Mathf.Lerp(minWind, maxWind, 0.7f)
+        );
+
+        nextRain = Random.Range(
+            Mathf.Lerp(minRain, maxRain, 0.2f),
+            Mathf.Lerp(minRain, maxRain, 0.6f)
+        );
+
+        nextPollinator = Random.Range(
+            Mathf.Lerp(minPollinator, maxPollinator, 0.3f),
+            Mathf.Lerp(minPollinator, maxPollinator, 0.7f)
+        );
     }
 }
