@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 // FINAL SCRIPT, ignore flowerscript, growth1, stalkgrower
-public class StalkGrow2 : MonoBehaviour
+public class FinalPlant : MonoBehaviour
 {
     // this script handles the stalk parameter space growth for my project
     // its intended to grow and branch based on parameters
@@ -128,20 +128,21 @@ public class StalkGrow2 : MonoBehaviour
     public GameObject petalPrefab;
     public GameObject flowerHolder; 
     public GameObject flowerTemplate;
-    public int flowerCount = 0;
+    public int flowerCount = 0; // contributes to score
     Color flowerColor;
 
-    [Header("Score Traits for STALK")]
-    public float stalk_windResistanceScore; // stalk thickness and flexibility
-    public float stalk_sunlightAbsorptionScore; // stalk length (more surface area = better for sunlight absorption)
-    public float stalk_tempResistanceScore; // stalk color (darker green = better for more temperature resistance)
-    public float stalk_strengthScore; // stalk length and width (longer and thicker stalks are stronger)
+    // assume commented is the best for it
+    [Header("Scores")] // this is just using all the traits and combining them, no individual needed
+    public float windResistanceScore; // thick stalk, shorter petals, more layers
+    public float sunlightAbsorptionScore; // greener leaves and stalks, bigger leaf area
+    public float tempResistanceScore; // petal width, layers for insulation
+    public float stabilityScore; // stalk height to stalk area ratio, stalk balance, branch thickness, leaf distribution for stability, branch symmetry for balance, branch distribution bias for balance
+    public float pollinatorAttractScore; // petal length, color brightness, flower count
+    public float waterSheddingScore; // petal width, layers
+    public float energyStressScore; // flower energy param, 0 means less stress and shrinkage as more flowers are made, 1 means more stress and shrinkage
+    public float waterStressScore; // flower count contributes to water stress, more flowers means more water needed, but also contributes to pollinator attract score, so there's a balance there
+    public float lightCompetitionScore; // height and leaf area and darker greens
 
-    [Header("Score Traits for FLOWER")]
-    public float flow_pollinatorAttractScore; // petal length and color brightness
-    public float flow_tempResistanceScore; // petal width and layers (more width and layers = more insulation)
-    public float flow_windResistanceScore; // petal length and layers (shorter petals and more layers = less likely to be damaged by wind)
-    public float flow_waterSheddingScore; // petal width and layers (wider petals and more layers = better at shedding water to prevent mold)
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -149,6 +150,79 @@ public class StalkGrow2 : MonoBehaviour
         initRandomParam();
         createFlowerTemplate();
         createStalk();
+        calculateScore();
+    }
+
+    public void calculateScore()
+    {
+        // just weighted sums that add to 1 based on priority
+        windResistanceScore =
+        (parameters[stalk_width] * 0.2f) +
+        (flowerParameters[petal_length] * 0.4f) + // shorter petals are more resistant to wind damage
+        (flowerParameters[total_layers] * 0.3f) + // more layers better
+        (branchParameters[branch_thickness] * 0.1f);
+
+        // values good greens and bigger leaves
+        sunlightAbsorptionScore =
+        (parameters[stalk_color_saturation] * 0.15f) +
+        (parameters[stalk_color_value] * 0.1f) +
+        (leafParameters[leaf_color_saturation] * 0.2f) +
+        (leafParameters[leaf_color_value] * 0.15f) +
+        (leafParameters[leaf_length] * leafParameters[leaf_width] * 0.4f); // leaf area
+
+        // smaller petals and more layers
+        float biasScore = 1f - Mathf.Abs(leafParameters[leaf_distribution_bias] - 0.5f) / 0.5f;
+        biasScore = Mathf.Clamp01(biasScore);
+        tempResistanceScore = 
+        (flowerParameters[petal_width] * 0.3f) +
+        (flowerParameters[total_layers] * 0.4f) +
+        (biasScore * 0.3f); // even leaves help
+
+        float branchBiasScore =
+        1f - Mathf.Abs(branchParameters[branch_distribution_bias] - 0.5f) / 0.5f;
+        branchBiasScore = Mathf.Clamp01(branchBiasScore);
+
+        float heightScore = Mathf.Clamp01(stalkHeights[0] / 10f);
+        float widthScore = 1f - Mathf.Clamp01((mainwidth - 0.1f) / 0.4f);
+        float structureScore = heightScore * widthScore;
+
+        stabilityScore =
+        (structureScore * 0.35f) + // area
+        (parameters[stalk_balance] * 0.15f) +
+        (branchParameters[branch_thickness] * 0.1f) +
+        (branchParameters[branch_symmetry] * 0.2f) +
+        (branchBiasScore * 0.1f) + // branch
+        (biasScore * 0.1f); // leaf
+
+        // brighter bigger flowers
+        pollinatorAttractScore = 
+        (flowerParameters[petal_length] * 0.25f) + 
+        (flowerParameters[flower_color_Saturation] * 0.25f) + 
+        (flowerParameters[flower_color_Value] * 0.4f); 
+
+        // better at remove water
+        waterSheddingScore =
+        (flowerParameters[petal_width] * 0.3f) +
+        (flowerParameters[total_layers] * 0.25f) +
+        ((1f - flowerParameters[petal_length]) * 0.25f) +
+        ((1f - flowerParameters[petal_count]) * 0.2f);
+
+        // balanced leaf to flower ratio
+        energyStressScore =
+        (flowerParameters[energy] * 0.5f) +
+        (Mathf.Clamp01(flowerCount / (leafCount + 1f)) * 0.5f);
+
+        // longer stalks/branches and more flowers means more water needed
+        waterStressScore =
+        (parameters[stalk_length] * 0.35f) +
+        (branchParameters[branch_length] * 0.3f) +
+        energyStressScore * 0.3f;
+
+        // reach capability for light
+        lightCompetitionScore =
+        (parameters[stalk_height] * 0.4f) + // far reach
+        (leafParameters[leaf_length] * .4f) + // far reach
+        (leafParameters[leaf_width] * 0.2f);
     }
 
     public void createFlowerTemplate()
@@ -576,15 +650,6 @@ public class StalkGrow2 : MonoBehaviour
 
             Start();
         }
-    }
-
-    public void createScore()
-    {
-        // notes:
-        // wind resistance: thicker stalks are more resistant 
-        // greenness is for sunlight absorption
-        // stalk length for wind
-        // todo
     }
 
     public void initRandomParam()
