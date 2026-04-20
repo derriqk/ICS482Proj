@@ -323,16 +323,16 @@ public class FinalPlant : MonoBehaviour
         GameObject center = Instantiate(centerPrefab, Vector3.zero, Quaternion.identity);
         center.transform.parent = flowerTemplate.transform;
 
-        flowerColor = Color.HSVToRGB(parameters[flower_color_Hue], parameters[flower_color_Saturation], parameters[flower_color_Value]);
+        flowerColor = Color.HSVToRGB(flowerParameters[flower_color_Hue], flowerParameters[flower_color_Saturation], flowerParameters[flower_color_Value]);
 
-        float petalWidth = parameters[petal_width] * (maxPetalWidth - minPetalWidth) + minPetalWidth;
-        float petalLength = parameters[petal_length] * (maxPetalLength - minPetalLength) + minPetalLength;
+        float petalWidth = flowerParameters[petal_width] * (maxPetalWidth - minPetalWidth) + minPetalWidth;
+        float petalLength = flowerParameters[petal_length] * (maxPetalLength - minPetalLength) + minPetalLength;
 
-        float petalCount = Mathf.Ceil(parameters[petal_count] * (maxPetalCount - minPetalCount) + minPetalCount); // scale petal count to be between min and max
+        float petalCount = Mathf.Ceil(flowerParameters[petal_count] * (maxPetalCount - minPetalCount) + minPetalCount); // scale petal count to be between min and max
 
         float angleBetweenPetals = 360f / petalCount;
 
-        int layers = Mathf.Max(minLayers, (int) Mathf.Ceil(maxLayers * parameters[total_layers]));
+        int layers = Mathf.Max(minLayers, (int) Mathf.Ceil(maxLayers * flowerParameters[total_layers]));
 
         Vector3 pos = center.transform.position;
         pos.z = -1f;
@@ -370,7 +370,7 @@ public class FinalPlant : MonoBehaviour
             // scale dies down as more are made
             // determined by flower energy
             // energy can reduce scale by up to 50%, and each flower reduces scale by 5%
-            float scale = 1f - (parameters[energy] * 0.5f) - (flowerCount * 0.05f); 
+            float scale = 1f - (flowerParameters[energy] * 0.5f) - (flowerCount * 0.05f); 
             center.GetComponent<SpriteRenderer>().color = flowerColor;
             float sizeScale;
             if (index < 40)

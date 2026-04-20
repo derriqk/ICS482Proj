@@ -104,7 +104,6 @@ public class WorldHandlerFinal : MonoBehaviour
         // resets generation
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            setWorldState();
             refreshPlants();
         }
 
@@ -139,6 +138,19 @@ public class WorldHandlerFinal : MonoBehaviour
             setWorldState();
         }
         
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            updateStates();
+        }
+    }
+
+    public void updateStates()
+    {
+        temperature = tempScore * (maxTemp - minTemp) + minTemp;
+        sunlight_Level = sunScore * (maxSun - minSun) + minSun;
+        windSpeed = windScore * (maxWind - minWind) + minWind;
+        rain_Level = rainScore * (maxRain - minRain) + minRain;
+        pollinator_Level = pollinatorScore * (maxPollinator - minPollinator) + minPollinator;
 
     }
 
