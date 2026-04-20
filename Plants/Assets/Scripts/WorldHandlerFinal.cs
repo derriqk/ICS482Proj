@@ -71,11 +71,11 @@ public class WorldHandlerFinal : MonoBehaviour
     public float[] best2seed;
     private float gentimer = 0f;
     public float genspeed;
-    private float seasonTimer = 0f;
-    private int season; // 0 = summer, 1 = fall, 2 = winter, 3 = spring
-    public float seasonDuration = 20f;
-    public bool randomState = true;
     public bool auto = true;
+
+    public bool randAuto = false;
+    private float randTimer = 0f;
+    public float randSpeed = 5f;
 
     private float delay = 0f;
 
@@ -83,9 +83,7 @@ public class WorldHandlerFinal : MonoBehaviour
     void Start()
     {
         initMinMaxStates();
-        season = 0; // start in summer
-        generateSummer();
-        //setWorldState();
+        setWorldState();
 
         int count = locationParent.transform.childCount;
         fitnessScores = new float[count];
@@ -129,29 +127,18 @@ public class WorldHandlerFinal : MonoBehaviour
             gentimer = 0f;
         }
 
-        if (auto) seasonTimer += Time.deltaTime;
-        if (seasonTimer >= seasonDuration)
+        if (randAuto) randTimer += Time.deltaTime;
+        if (randTimer >= randSpeed)
         {
-            season = (season + 1) % 4; // cycle through seasons
-            switch (season)
-            {
-                case 0:
-                    generateSummer();
-                    break;
-                case 1:
-                    generateFall();
-                    break;
-                case 2:
-                    generateWinter();
-                    break;
-                case 3:
-                    generateSpring();
-                    break;
-            }
-            if (randomState) setWorldState(); // random
-
-            seasonTimer = 0f;
+            setWorldState();
+            randTimer = 0f;
         }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            setWorldState();
+        }
+        
 
     }
 
