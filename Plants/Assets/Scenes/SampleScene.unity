@@ -4491,7 +4491,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldHandlerFinal
   mutationRate: 0.05
   crossoverRate: 0.02
-  deviationAmount: 0.05
+  deviationAmount: 0.1
   randomGenome: 0.01
   temperature: 0
   sunlight_Level: 0
