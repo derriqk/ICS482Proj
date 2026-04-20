@@ -9,6 +9,12 @@ public class WorldHandlerFinal : MonoBehaviour
     // it will keep a list of fitness score
     // this script defines the world
 
+    [Header("Rates")]
+    public float mutationRate;
+    public float crossoverRate; // for breeding
+    public float deviationAmount;
+    public float randomGenome; // rlly low please, or -1 if unused
+
     // this is the actual stats of the global states, aka numbers with meaning
     // for example: temperature is on a range of -100 to 100 degrees fahrenheit
     // but on a score scale (0 - 1), a 70 would be .85 normalized
@@ -18,6 +24,7 @@ public class WorldHandlerFinal : MonoBehaviour
     public float windSpeed = 0;
     public float rain_Level = 0;
     public float pollinator_Level = 0;
+    
 
     // start states
     private float startTemp;
@@ -42,16 +49,16 @@ public class WorldHandlerFinal : MonoBehaviour
     public float pollinatorScore;
 
     [Header("State Ranges")]
-    public float minTemp;
-    public float maxTemp;
-    public float minSun;
-    public float maxSun;
-    public float minWind;
-    public float maxWind;
-    public float minRain;
-    public float maxRain;
-    public float minPollinator;
-    public float maxPollinator;
+     float minTemp;
+     float maxTemp;
+     float minSun;
+     float maxSun;
+     float minWind;
+     float maxWind;
+     float minRain;
+     float maxRain;
+     float minPollinator;
+     float maxPollinator;
 
     [Header("Plant List")]
     public GameObject[] plantList; // list of plants
@@ -99,7 +106,7 @@ public class WorldHandlerFinal : MonoBehaviour
     void Update()
     {
         delay += Time.deltaTime;
-        if (delay < 4f) return;
+        if (delay < 2f) return;
 
         // resets generation
         if (Input.GetKeyDown(KeyCode.Space))
@@ -152,6 +159,12 @@ public class WorldHandlerFinal : MonoBehaviour
         rain_Level = rainScore * (maxRain - minRain) + minRain;
         pollinator_Level = pollinatorScore * (maxPollinator - minPollinator) + minPollinator;
 
+        for (int i = 0; i < plantList.Length; i++)
+        {
+            plantScripts[i].mutationRate = mutationRate;
+            plantScripts[i].crossoverRate = crossoverRate;
+            plantScripts[i].deviationAmount = deviationAmount;
+        }
     }
 
     private IEnumerator getBestPlants(float delay)
@@ -232,6 +245,10 @@ public class WorldHandlerFinal : MonoBehaviour
             plantScripts[i] = newPlant.GetComponent<FinalPlant>();
             plantScripts[i].worldHandler = this; // set reference to world handler in plant script
             plantScripts[i].index = i; // set index in plant script for score updating
+            plantScripts[i].mutationRate = mutationRate;
+            plantScripts[i].crossoverRate = crossoverRate;
+            plantScripts[i].deviationAmount = deviationAmount;
+            plantScripts[i].randomGenome = randomGenome;
             newPlant.transform.parent = plantParent.transform;
             Vector3 pos = newPlant.transform.position;
             pos.z = startZ + i;

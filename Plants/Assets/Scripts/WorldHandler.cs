@@ -30,18 +30,18 @@ public class WorldHandler : MonoBehaviour
     public float pollinatorScore;
 
     [Header("State Ranges")]
-    public float minTemp;
-    public float maxTemp;
-    public float minSun;
-    public float maxSun;
-    public float minWind;
-    public float maxWind;
-    public float minRain;
-    public float maxRain;
-    public float minOxygen;
-    public float maxOxygen;
-    public float minPollinator;
-    public float maxPollinator;
+    private float minTemp;
+    private float maxTemp;
+    private float minSun;
+    private float maxSun;
+    private float minWind;
+    private float maxWind;
+    private float minRain;
+    private float maxRain;
+    private float minOxygen;
+    private float maxOxygen;
+    private float minPollinator;
+    private float maxPollinator;
 
     [Header("Plant List")]
     public GameObject flowerPrefab; // holder for flower 

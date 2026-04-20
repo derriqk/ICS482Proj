@@ -149,7 +149,8 @@ public class FinalPlant : MonoBehaviour
     public float[] seed; // size is sum of dimensions
     public float mutationRate;
     public float deviationAmount;
-
+    public float crossoverRate;
+    public float randomGenome; // really really low, -1 if not used
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -168,7 +169,8 @@ public class FinalPlant : MonoBehaviour
 
     public void seededGeneration(float[] parent1, float[] parent2)
     {
-        randomPercentageGenes(parent1, parent2);
+        //randomPercentageGenes(parent1, parent2);
+        crossoverGenes(parent1, parent2);
         mutate();
         initParamsFromSeed();
         clearPlant();
@@ -219,26 +221,80 @@ public class FinalPlant : MonoBehaviour
         }
     }
 
+    public void crossoverGenes(float[] parent1, float[] parent2)
+    {
+        // one point crossover
+        int crossoverPoint = Random.Range(1, seed.Length - 1); // ensure at least one gene from each parent
+
+        for (int i = 0; i < crossoverPoint; i++)
+        {
+            seed[i] = parent1[i];
+        }
+        for (int i = crossoverPoint; i < seed.Length; i++)
+        {
+            seed[i] = parent2[i];
+        }
+    }
+
+    public void copyRandomParentGenes(float[] parent1, float[] parent2)
+    {
+        float[] parent = Random.value > 0.5f ? parent1 : parent2;
+        for (int i = 0; i < seed.Length; i++)
+        {
+            seed[i] = parent[i];
+        }
+    }
+
     public void initParamsFromSeed()
     {
         for (int i = 0; i < paramDimension; i++)
         {
-            parameters[i] = seed[i];
+            if (Random.value < randomGenome)
+            {
+                seed[i] = Random.Range(0f, 1f);
+            } else
+            {
+                parameters[i] = seed[i];
+            }
         }
 
         for (int i = paramDimension; i < paramDimension + leafParamDimension; i++)
         {
-            leafParameters[i - paramDimension] = seed[i];
+            if (Random.value < randomGenome)
+            {
+                seed[i] = Random.Range(0f, 1f);
+            } else
+            {
+                leafParameters[i - paramDimension] = seed[i];
+            }
         }
 
         for (int i = paramDimension + leafParamDimension; i < paramDimension + leafParamDimension + branchParamDimension; i++)
         {
-            branchParameters[i - paramDimension - leafParamDimension] = seed[i];
+            if (Random.value < randomGenome)
+            {
+                seed[i] = Random.Range(0f, 1f);
+            } else
+            {
+                branchParameters[i - paramDimension - leafParamDimension] = seed[i];
+            }
         }
 
         for (int i = paramDimension + leafParamDimension + branchParamDimension; i < paramDimension + leafParamDimension + branchParamDimension + flowerParamDimension; i++)
         {
-            flowerParameters[i - paramDimension - leafParamDimension - branchParamDimension] = seed[i];
+            if (Random.value < randomGenome)
+            {
+                seed[i] = Random.Range(0f, 1f);
+            } else
+            {
+                flowerParameters[i - paramDimension - leafParamDimension - branchParamDimension] = seed[i];
+            }
+
+            // if (i == flower_color_Hue + paramDimension + leafParamDimension + branchParamDimension)
+            // {
+            //     // make it random for visual effects
+            //     flowerParameters[i - paramDimension - leafParamDimension - branchParamDimension] = Random.Range(0f, 1f);
+            // }
         }
     }
 
@@ -406,7 +462,7 @@ public class FinalPlant : MonoBehaviour
         Color branchColor = stalkColor; // same for now
 
         // copies stalk
-        minBranchLength = minStalkLength *5; // 3 times branch length
+        minBranchLength = minStalkLength;// *5; // 3 times branch length
         maxBranchLength = maxStalkLength *9;
         minBranchThickness = minStalkWidth;
         maxBranchThickness = maxStalkWidth;
