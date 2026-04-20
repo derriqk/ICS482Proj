@@ -756,6 +756,16 @@ public class FinalPlant : MonoBehaviour
         createFlowers();
     }
 
+    // useful for manually editing params
+    public void refreshPlant()
+    {
+        clearPlant();
+        createFlowerTemplate();
+        createStalk();
+        calculateScore();
+        worldHandler.EvalScore(this, index); // update score in world handler after calculating
+    }
+
     public void clearPlant()
     {
         foreach (List<GameObject> stalk in stalkSegments)

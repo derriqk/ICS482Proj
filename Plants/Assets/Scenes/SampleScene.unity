@@ -4489,10 +4489,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba3b1a1ff1834d342832f0928fe7c9f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldHandlerFinal
-  mutationRate: 0.05
-  crossoverRate: 0.02
+  mutationRate: 0.1
+  crossoverRate: 0.5
   deviationAmount: 0.1
-  randomGenome: 0.01
+  randomGenome: 0.15
+  retentionRate: 0.5
   temperature: 0
   sunlight_Level: 0
   windSpeed: 0
@@ -4514,6 +4515,8 @@ MonoBehaviour:
   best1seed: []
   best2Index: 0
   best2seed: []
+  breederPool: 
+  fitnessSortedIndices: 
   genspeed: 0.25
   auto: 0
   randAuto: 0

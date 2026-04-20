@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class WorldHandlerFinal : MonoBehaviour
 {
@@ -14,6 +15,7 @@ public class WorldHandlerFinal : MonoBehaviour
     public float crossoverRate; // for breeding
     public float deviationAmount;
     public float randomGenome; // rlly low please, or -1 if unused
+    public float retentionRate; // size of breeder pool
 
     // this is the actual stats of the global states, aka numbers with meaning
     // for example: temperature is on a range of -100 to 100 degrees fahrenheit
@@ -76,6 +78,9 @@ public class WorldHandlerFinal : MonoBehaviour
     public float[] best1seed;
     public int best2Index; // index of second best plant
     public float[] best2seed;
+    public int[] breederPool; // index list
+    public int[] fitnessSortedIndices; // sorted index list based on fitness scores
+    public float[][] breederPoolSeeds; // seeds of breeder pool for easy access during breeding
     private float gentimer = 0f;
     public float genspeed;
     public bool auto = true;
@@ -96,6 +101,8 @@ public class WorldHandlerFinal : MonoBehaviour
         fitnessScores = new float[count];
         plantList = new GameObject[count];
         plantScripts = new FinalPlant[count];
+        breederPool = new int[Mathf.CeilToInt(count * retentionRate)];
+        breederPoolSeeds = new float[breederPool.Length][];
         locationSetup();
 
         GeneratePlants(); // first gen is always random
@@ -149,6 +156,43 @@ public class WorldHandlerFinal : MonoBehaviour
         {
             updateStates();
         }
+
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            for (int i = 0; i < plantList.Length; i++)
+            {
+                plantScripts[i].refreshPlant();
+            }
+        }
+    }
+
+    public void sortFitnessScores()
+    {
+        fitnessSortedIndices = new int[fitnessScores.Length];
+        for (int i = 0; i < fitnessScores.Length; i++)
+        {
+            fitnessSortedIndices[i] = i;
+        }
+
+        System.Array.Sort(fitnessScores, fitnessSortedIndices);
+        System.Array.Reverse(fitnessSortedIndices); // sort in descending order
+    }
+
+    public void createBreederPool()
+    {
+        sortFitnessScores();
+        for (int i = 0; i < breederPool.Length; i++)
+        {
+            breederPool[i] = fitnessSortedIndices[i];
+            breederPoolSeeds[i] = plantScripts[breederPool[i]].seed;
+        }
+
+        //printSeeds(); // debug
+    }
+
+    public void printSeeds()
+    {
+        
     }
 
     public void updateStates()
@@ -172,25 +216,29 @@ public class WorldHandlerFinal : MonoBehaviour
         // first time is always 2f
         yield return new WaitForSeconds(delay);
         // find best and second best plant indices
-        float best1Score = float.MinValue;
-        float best2Score = float.MinValue;
+        // float best1Score = float.MinValue;
+        // float best2Score = float.MinValue;
 
-        for (int i = 0; i < fitnessScores.Length; i++)
-        {
-            if (fitnessScores[i] > best1Score)
-            {
-                best2Score = best1Score;
-                best2Index = best1Index;
-                best1Score = fitnessScores[i];
-                best1Index = i;
-            }
-            else if (fitnessScores[i] > best2Score)
-            {
-                best2Score = fitnessScores[i];
-                best2Index = i;
-            }
-        }
-        
+        // for (int i = 0; i < fitnessScores.Length; i++)
+        // {
+        //     if (fitnessScores[i] > best1Score)
+        //     {
+        //         best2Score = best1Score;
+        //         best2Index = best1Index;
+        //         best1Score = fitnessScores[i];
+        //         best1Index = i;
+        //     }
+        //     else if (fitnessScores[i] > best2Score)
+        //     {
+        //         best2Score = fitnessScores[i];
+        //         best2Index = i;
+        //     }
+        // }
+
+        createBreederPool();
+        //sortFitnessScores();
+
+
         // Debug.Log(best1Index);
         // Debug.Log(best2Index);
         best1seed = new float[plantScripts[best1Index].seed.Length];
@@ -260,7 +308,19 @@ public class WorldHandlerFinal : MonoBehaviour
     {
         for (int i = 0; i < plantList.Length; i++)
         {
-            plantScripts[i].seededGeneration(best1seed, best2seed);
+            int randomP1 = breederPool[Random.Range(0, breederPool.Length)];
+            int randomP2 = -1;
+            do
+            {
+                randomP2 = breederPool[Random.Range(0, breederPool.Length)];
+            } while (randomP2 == randomP1);
+
+            Debug.Log("Breeding plant " + randomP1 + " and plant " + randomP2);
+            plantScripts[i].seededGeneration(
+                breederPoolSeeds[randomP1],
+                breederPoolSeeds[randomP2]
+            );
+            
         }
 
         StartCoroutine(getBestPlants(0f));
