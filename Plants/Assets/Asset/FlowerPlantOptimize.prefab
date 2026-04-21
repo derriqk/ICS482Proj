@@ -144,13 +144,13 @@ MonoBehaviour:
   leafParameters: []
   branchParameters: []
   minStalkLength: 2
-  maxStalkLength: 5
+  maxStalkLength: 10
   minStalkWidth: 1
-  maxStalkWidth: 4
+  maxStalkWidth: 6
   minMainStalkCount: 1
   maxMainStalkCount: 3
   minStalkHeight: 3
-  maxStalkHeight: 18
+  maxStalkHeight: 16
   minSegmentAngleVariation: 0
   maxSegmentAngleVariation: 3
   minStartStalkAngle: -15
@@ -158,9 +158,9 @@ MonoBehaviour:
   minHeightVariation: 0
   maxHeightVariation: 0.5
   minLeafLength: 6
-  maxLeafLength: 20
+  maxLeafLength: 40
   minLeafWidth: 2
-  maxLeafWidth: 15
+  maxLeafWidth: 25
   leafPrefab: {fileID: 3398868522557772280, guid: aac581c7641efa7448d946eb7027ed6b, type: 3}
   leafHolder: {fileID: 8541831198791900377}
   leafCount: 0
@@ -204,6 +204,7 @@ MonoBehaviour:
   mutationRate: 0.2
   deviationAmount: 0.4
   crossoverRate: 0
+  randomGenome: 0
 --- !u!212 &1439887204475043344
 SpriteRenderer:
   m_ObjectHideFlags: 0

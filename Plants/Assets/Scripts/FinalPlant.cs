@@ -842,7 +842,7 @@ public class FinalPlant : MonoBehaviour
         flowerParameters = new float[flowerParamDimension];
         flowerParameters[flower_color_Hue] = Random.Range(0f, 1f);
         flowerParameters[flower_color_Saturation] = Random.Range(0f, 1f);
-        flowerParameters[flower_color_Value] = Random.Range(0f, 1f);
+        flowerParameters[flower_color_Value] = Random.Range(.4f, 1f);
 
         // length will be for sunlight absorb fitness
         flowerParameters[petal_length] = Random.Range(0f, 1f);
