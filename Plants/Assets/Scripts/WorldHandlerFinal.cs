@@ -72,10 +72,13 @@ public class WorldHandlerFinal : MonoBehaviour
     [Header("Location List")]
     public GameObject locationParent; // parent object for plant locations
     public GameObject[] locationList; // list of locations for plants to grow
+    public GameObject bestSpawn; // holder for best plant spawn location
 
     [Header("Generation Control")]
     public float[] fitnessScores; // list of fitness scores for each plant
     public int[] breederPool; // index list of the top retention
+    public GameObject bestPlant;
+    public FinalPlant bestPlantScript;
     public int[] fitnessSortedIndices; // sorted index list based on fitness scores
     public float[][] breederPoolSeeds; // seeds of breeder pool for easy access during breeding
     private float gentimer = 0f;
@@ -225,6 +228,8 @@ public class WorldHandlerFinal : MonoBehaviour
             }
         }
 
+        updateBestPlant();
+
         //printSeeds();
     }
 
@@ -325,6 +330,41 @@ public class WorldHandlerFinal : MonoBehaviour
         {
             plantScripts[i].randomGeneration();
         }
+
+        instantiateBestPlant();
+        
+    }
+
+    public void instantiateBestPlant()
+    {
+        bestPlant = Instantiate(plantPrefab, bestSpawn.transform.position, Quaternion.identity);
+        bestPlantScript = bestPlant.GetComponent<FinalPlant>();
+        bestPlantScript.worldHandler = this;
+        bestPlant.transform.parent = bestSpawn.transform;
+        bestPlantScript.seed = new float[31];
+        bestPlantScript.parameters = new float[11];
+        bestPlantScript.leafParameters = new float[6];
+        bestPlantScript.branchParameters = new float[6];
+        bestPlantScript.flowerParameters = new float[8];
+    }
+
+    public void updateBestPlant()
+    {
+        //Debug.Log(bestPlantScript.seed.Length);
+        for (int i = 0; i < bestPlantScript.seed.Length; i++)
+        {
+            bestPlantScript.seed[i] = breederPoolSeeds[0][i];
+            //Debug.Log(bestPlantScript.seed[i]);
+        }
+
+        bestPlantScript.initParamsFromSeed(false);
+        bestPlantScript.createFlowerTemplate();
+        bestPlantScript.clearPlant();
+        bestPlantScript.createStalk();
+        //bestPlantScript.calculateScore();
+
+        // work on for next wed
+        // parameter flags and seasons (use sine waves)
     }
 
     public void NextGeneration()
@@ -344,8 +384,9 @@ public class WorldHandlerFinal : MonoBehaviour
                 breederPoolSeeds[randomP1],
                 breederPoolSeeds[randomP2]
             );
-            
         }
+
+
 
         StartCoroutine(getBestPlants(0f));
     }

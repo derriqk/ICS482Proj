@@ -171,7 +171,7 @@ public class FinalPlant : MonoBehaviour
         //randomPercentageGenes(parent1, parent2);
         crossoverGenes(parent1, parent2);
         mutate();
-        initParamsFromSeed();
+        initParamsFromSeed(true);
         clearPlant();
         createFlowerTemplate();
         createStalk();
@@ -244,11 +244,11 @@ public class FinalPlant : MonoBehaviour
         }
     }
 
-    public void initParamsFromSeed()
+    public void initParamsFromSeed(bool useRandomGenome = false)
     {
         for (int i = 0; i < paramDimension; i++)
         {
-            if (Random.value < randomGenome)
+            if (Random.value < randomGenome && useRandomGenome)
             {
                 seed[i] = Random.Range(0f, 1f);
             } else
@@ -259,7 +259,7 @@ public class FinalPlant : MonoBehaviour
 
         for (int i = paramDimension; i < paramDimension + leafParamDimension; i++)
         {
-            if (Random.value < randomGenome)
+            if (Random.value < randomGenome && useRandomGenome)
             {
                 seed[i] = Random.Range(0f, 1f);
             } else
@@ -270,7 +270,7 @@ public class FinalPlant : MonoBehaviour
 
         for (int i = paramDimension + leafParamDimension; i < paramDimension + leafParamDimension + branchParamDimension; i++)
         {
-            if (Random.value < randomGenome)
+            if (Random.value < randomGenome && useRandomGenome)
             {
                 seed[i] = Random.Range(0f, 1f);
             } else
@@ -281,7 +281,7 @@ public class FinalPlant : MonoBehaviour
 
         for (int i = paramDimension + leafParamDimension + branchParamDimension; i < paramDimension + leafParamDimension + branchParamDimension + flowerParamDimension; i++)
         {
-            if (Random.value < randomGenome)
+            if (Random.value < randomGenome && useRandomGenome)
             {
                 seed[i] = Random.Range(0f, 1f);
             } else
