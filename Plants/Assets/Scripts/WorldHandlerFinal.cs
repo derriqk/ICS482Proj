@@ -320,6 +320,11 @@ public class WorldHandlerFinal : MonoBehaviour
             pos.z = startZ + i;
             newPlant.transform.position = pos;
         }
+
+        for (int i = 0; i < plantList.Length; i++)
+        {
+            plantScripts[i].randomGeneration();
+        }
     }
 
     public void NextGeneration()

@@ -152,10 +152,9 @@ public class FinalPlant : MonoBehaviour
     public float crossoverRate;
     public float randomGenome; // really really low, -1 if not used
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        randomGeneration();
+        //randomGeneration();
     }
 
     public void randomGeneration()
