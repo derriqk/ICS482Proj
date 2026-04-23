@@ -196,6 +196,17 @@ public class WorldHandlerFinal : MonoBehaviour
         }
     }
 
+    public void copyBestPlantToSpawner() 
+    {
+        if (bestSpawn.transform.childCount > 0)
+        {
+            bestSpawn.transform.GetChild(0).gameObject.SetActive(false); // hide
+            Destroy(bestSpawn.transform.GetChild(0).gameObject);
+        }
+        GameObject best = Instantiate(plantList[breederPool[0]], bestSpawn.transform.position, Quaternion.identity);
+        best.transform.parent = bestSpawn.transform;
+    }
+
     public void sortFitnessScores()
     {
         fitnessSortedIndices = new int[fitnessScores.Length];
@@ -228,7 +239,9 @@ public class WorldHandlerFinal : MonoBehaviour
             }
         }
 
-        updateBestPlant();
+        // updateBestPlant();
+
+        copyBestPlantToSpawner();
 
         //printSeeds();
     }
@@ -331,7 +344,7 @@ public class WorldHandlerFinal : MonoBehaviour
             plantScripts[i].randomGeneration();
         }
 
-        instantiateBestPlant();
+        //instantiateBestPlant();
         
     }
 
