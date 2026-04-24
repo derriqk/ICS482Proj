@@ -301,11 +301,11 @@ public class FinalPlant : MonoBehaviour
     {
         // just weighted sums that add to 1 based on priority
         windResistanceScore =
-        (parameters[stalk_width] * 0.2f) +
-        (flowerParameters[petal_length] * 0.2f) +
-        (flowerParameters[total_layers] * 0.3f) +
+        (parameters[stalk_width] * 0.1f) +
+        (flowerParameters[petal_length] * 0.1f) +
+        (flowerParameters[total_layers] * 0.15f) +
         (branchParameters[branch_thickness] * 0.1f) +
-        (parameters[stalk_height] * -0.4f);
+        (parameters[stalk_height] * -1.55f);
 
         float optimalGreen = worldHandler.sunScore; // or inverted depending on your design
         float greenMismatch =

@@ -18,6 +18,14 @@ public class WorldHandlerFinal : MonoBehaviour
     public float retentionRate; // size of breeder pool
     private float currRetention;
 
+    // example if wind is off, wind is not used in score calc
+    [Header("Toggle State Scores")]
+    public bool useTempScore;
+    public bool useSunScore;
+    public bool useWindScore;
+    public bool useRainScore;
+    public bool usePollinatorScore;
+
     // this is the actual stats of the global states, aka numbers with meaning
     // for example: temperature is on a range of -100 to 100 degrees fahrenheit
     // but on a score scale (0 - 1), a 70 would be .85 normalized
@@ -298,11 +306,11 @@ public class WorldHandlerFinal : MonoBehaviour
         //Debug.Log(p.flowerCount);
 
         float overallScore =
-        windScore * (p.windResistanceScore + p.stabilityScore) +
-        sunScore * (p.sunlightAbsorptionScore + p.lightCompetitionScore) +
-        tempScore * p.tempResistanceScore +
-        rainScore * (p.waterSheddingScore + p.waterStressScore + p.energyStressScore) +
-        pollinatorScore * p.pollinatorAttractScore * 1.2f;
+        (useWindScore ? 1: 0) * windScore * p.windResistanceScore * 2f + p.stabilityScore * .5f +
+        (useSunScore ? 1: 0 ) * sunScore * (p.sunlightAbsorptionScore + p.lightCompetitionScore) +
+        (useTempScore ? 1: 0 ) * tempScore * p.tempResistanceScore +
+        (useRainScore ? 1: 0 ) * rainScore * (p.waterSheddingScore + p.waterStressScore + p.energyStressScore) +
+        (usePollinatorScore ? 1: 0 ) * pollinatorScore * p.pollinatorAttractScore * 1.2f;
 
         fitnessScores[i] = overallScore;
     }
