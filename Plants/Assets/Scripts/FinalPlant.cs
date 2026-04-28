@@ -151,6 +151,7 @@ public class FinalPlant : MonoBehaviour
     public float deviationAmount;
     public float crossoverRate;
     public float randomGenome; // really really low, -1 if not used
+    public float HeightTrait; 
 
     void Start()
     {
@@ -301,11 +302,11 @@ public class FinalPlant : MonoBehaviour
     {
         // just weighted sums that add to 1 based on priority
         windResistanceScore =
-        (parameters[stalk_width] * 0.1f) +
-        (flowerParameters[petal_length] * 0.1f) +
-        (flowerParameters[total_layers] * 0.15f) +
-        (branchParameters[branch_thickness] * 0.1f) +
-        (parameters[stalk_height] * -1.55f);
+        (parameters[stalk_width] * 0.25f) +
+        (flowerParameters[total_layers] * 0.25f) +
+        (branchParameters[branch_thickness] * 0.25f);
+
+        HeightTrait = Mathf.Clamp01(parameters[stalk_height]);
 
         float optimalGreen = worldHandler.sunScore; // or inverted depending on your design
         float greenMismatch =

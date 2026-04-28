@@ -60,16 +60,16 @@ public class WorldHandlerFinal : MonoBehaviour
     public float pollinatorScore;
 
     [Header("State Ranges")]
-     float minTemp;
-     float maxTemp;
-     float minSun;
-     float maxSun;
-     float minWind;
-     float maxWind;
-     float minRain;
-     float maxRain;
-     float minPollinator;
-     float maxPollinator;
+    public float minTemp;
+    public float maxTemp;
+    public float minSun;
+    public float maxSun;
+    public float minWind;
+    public float maxWind;
+    public float minRain;
+    public float maxRain;
+    public float minPollinator;
+    public float maxPollinator;
 
     [Header("Plant List")]
     public GameObject[] plantList; // list of plants
@@ -90,7 +90,7 @@ public class WorldHandlerFinal : MonoBehaviour
     public int[] fitnessSortedIndices; // sorted index list based on fitness scores
     public float[][] breederPoolSeeds; // seeds of breeder pool for easy access during breeding
     private float gentimer = 0f;
-    public float genspeed;
+    public float genspeed = .25f;
     public bool auto = true;
 
     public bool randAuto = false;
@@ -100,13 +100,25 @@ public class WorldHandlerFinal : MonoBehaviour
     private float delay = 0f;
     private int count;
     public PredeterminedFlowers predeterminedFlowers;
+    public SeasonBehavior seasonBehavior;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        initMinMaxStates();
-        setWorldState();
+        StartCoroutine(startLater());
+    }
 
+    private IEnumerator startLater() 
+    {
+        while (!seasonBehavior.startDone) 
+        {
+            yield return null; // wait until season behavior is done initializing
+        }
+
+        initMinMaxStates();
+
+        copyTemp();
+        
         // below for specific flower states
         //predeterminedFlowers.Lilacs();
         //predeterminedFlowers.Sunflower();
@@ -122,6 +134,18 @@ public class WorldHandlerFinal : MonoBehaviour
 
         GeneratePlants(); // first gen is always random
         StartCoroutine(getBestPlants(1f)); 
+    }
+
+    public void copyTemp() 
+    {
+        temperature = seasonBehavior.startTemp;
+        sunlight_Level = seasonBehavior.startSun;
+        windSpeed = seasonBehavior.startWind;
+        rain_Level = seasonBehavior.startRain;
+        pollinator_Level = seasonBehavior.startPollinator;
+
+        normalizeWorldStates();
+        seasonBehavior.currentLerpCoroutine = StartCoroutine(seasonBehavior.lerpSeason());
     }
 
     public void setupBreederPool()
@@ -204,15 +228,22 @@ public class WorldHandlerFinal : MonoBehaviour
         }
     }
 
-    public void copyBestPlantToSpawner() 
+    public void copyBestPlantToSpawner()
     {
-        if (bestSpawn.transform.childCount > 0)
+        //Debug.Log(bestSpawn.transform.childCount);
+        for (int i = bestSpawn.transform.childCount - 1; i >= 0; i--)
         {
-            bestSpawn.transform.GetChild(0).gameObject.SetActive(false); // hide
-            Destroy(bestSpawn.transform.GetChild(0).gameObject);
+            bestSpawn.transform.GetChild(i).gameObject.SetActive(false);
+            Destroy(bestSpawn.transform.GetChild(i).gameObject);
         }
-        GameObject best = Instantiate(plantList[breederPool[0]], bestSpawn.transform.position, Quaternion.identity);
-        best.transform.parent = bestSpawn.transform;
+
+        GameObject best = Instantiate(
+            plantList[breederPool[0]],
+            bestSpawn.transform.position,
+            Quaternion.identity
+        );
+
+        best.transform.SetParent(bestSpawn.transform);
     }
 
     public void sortFitnessScores()
@@ -303,16 +334,56 @@ public class WorldHandlerFinal : MonoBehaviour
     // using script and now world states to get overall score
     public void EvalScore(FinalPlant p, int i)
     {
-        //Debug.Log(p.flowerCount);
+        float tempFit = Match(p.tempResistanceScore, tempScore);
+
+        float sunFit = Match(
+            (p.sunlightAbsorptionScore + p.lightCompetitionScore) * 0.5f,
+            sunScore
+        );
+
+        float heightTrait = p.HeightTrait;
+
+        // ideal height depends on wind:
+        float idealHeight = 1f - windScore;
+
+        float heightFit = 1f - Mathf.Abs(heightTrait - idealHeight);
+
+        float windFit = Match(p.stabilityScore, windScore) * 0.5f
+                    + heightFit * 0.5f;
+
+        float rainFit = Match(
+            (p.waterSheddingScore +
+            p.waterStressScore +
+            p.energyStressScore) / 3f,
+            rainScore
+        );
+
+        float pollinatorReward =
+            Mathf.Pow(pollinatorScore, 2f) * p.pollinatorAttractScore * 1.2f;
+
+        float flowerMaintenanceCost =
+            p.flowerCount * (1f - pollinatorScore) * 0.05f;
+
+        float matchScore =
+            (useTempScore ? tempFit : 0.01f) +
+            (useSunScore ? sunFit : 0.01f) +
+            (useWindScore ? windFit : 0.01f) +
+            (useRainScore ? rainFit : 0.01f);
+
+        float pollinatorScoreFinal =
+            usePollinatorScore ? pollinatorReward : 0.01f;
 
         float overallScore =
-        (useWindScore ? 1: 0) * windScore * p.windResistanceScore * 2f + p.stabilityScore * .5f +
-        (useSunScore ? 1: 0 ) * sunScore * (p.sunlightAbsorptionScore + p.lightCompetitionScore) +
-        (useTempScore ? 1: 0 ) * tempScore * p.tempResistanceScore +
-        (useRainScore ? 1: 0 ) * rainScore * (p.waterSheddingScore + p.waterStressScore + p.energyStressScore) +
-        (usePollinatorScore ? 1: 0 ) * pollinatorScore * p.pollinatorAttractScore * 1.2f;
+            matchScore +
+            pollinatorScoreFinal -
+            flowerMaintenanceCost;
 
         fitnessScores[i] = overallScore;
+    }
+
+    float Match(float trait, float env)
+    {
+        return 1f - Mathf.Abs(trait - env);
     }
 
     public void refreshPlants()
@@ -414,7 +485,6 @@ public class WorldHandlerFinal : MonoBehaviour
 
     public void setWorldState()
     {
-        
         createWorldStates();
         normalizeWorldStates();
     }
@@ -442,7 +512,7 @@ public class WorldHandlerFinal : MonoBehaviour
         normalizeWorldStates();
     }
 
-    private void normalizeWorldStates()
+    public void normalizeWorldStates()
     {
         // normalize to 0-1 score
         tempScore = (temperature - minTemp) / (maxTemp - minTemp);
@@ -478,124 +548,4 @@ public class WorldHandlerFinal : MonoBehaviour
         maxPollinator = 50.0f;
     }
 
-    private void generateSummer()
-    {
-        temperature = Random.Range(
-            Mathf.Lerp(minTemp, maxTemp, 0.6f),
-            maxTemp
-        );
-        
-        sunlight_Level = Random.Range(
-            Mathf.Lerp(minSun, maxSun, 0.5f),
-            maxSun
-        );
-
-        windSpeed = Random.Range(
-            Mathf.Lerp(minWind, maxWind, 0.2f),
-            Mathf.Lerp(minWind, maxWind, 0.6f)
-        );
-      
-        rain_Level = Random.Range(
-            Mathf.Lerp(minRain, maxRain, 0.3f),
-            Mathf.Lerp(minRain, maxRain, 0.8f)
-        );
-      
-        pollinator_Level = Random.Range(
-            Mathf.Lerp(minPollinator, maxPollinator, 0.5f),
-            maxPollinator
-        );
-
-        normalizeWorldStates();
-      
-    }
-
-    private void generateWinter()
-    {
-        temperature = Random.Range(
-            minTemp,
-            Mathf.Lerp(minTemp, maxTemp, 0.3f)
-        );
-
-        sunlight_Level = Random.Range(
-            minSun,
-            Mathf.Lerp(minSun, maxSun, 0.4f)
-        );
-
-        windSpeed = Random.Range(
-            Mathf.Lerp(minWind, maxWind, 0.4f),
-            maxWind
-        );
-
-        rain_Level = Random.Range(
-            minRain,
-            Mathf.Lerp(minRain, maxRain, 0.5f)
-        );
-
-        pollinator_Level = Random.Range(
-            minPollinator,
-            Mathf.Lerp(minPollinator, maxPollinator, 0.4f)
-        );
-
-        normalizeWorldStates();
-}
-
-    private void generateSpring()
-    {
-        temperature = Random.Range(
-            Mathf.Lerp(minTemp, maxTemp, 0.4f),
-            Mathf.Lerp(minTemp, maxTemp, 0.7f)
-        );
-
-        sunlight_Level = Random.Range(
-            Mathf.Lerp(minSun, maxSun, 0.5f),
-            Mathf.Lerp(minSun, maxSun, 0.8f)
-        );
-
-        windSpeed = Random.Range(
-            Mathf.Lerp(minWind, maxWind, 0.2f),
-            Mathf.Lerp(minWind, maxWind, 0.5f)
-        );
-
-        rain_Level = Random.Range(
-            Mathf.Lerp(minRain, maxRain, 0.4f),
-            Mathf.Lerp(minRain, maxRain, 0.8f)
-        );
-
-        pollinator_Level = Random.Range(
-            Mathf.Lerp(minPollinator, maxPollinator, 0.6f),
-            maxPollinator
-        );
-
-        normalizeWorldStates(); 
-    }
-
-    private void generateFall()
-    {
-        temperature = Random.Range(
-            Mathf.Lerp(minTemp, maxTemp, 0.3f),
-            Mathf.Lerp(minTemp, maxTemp, 0.6f)
-        );
-
-        sunlight_Level = Random.Range(
-            Mathf.Lerp(minSun, maxSun, 0.4f),
-            Mathf.Lerp(minSun, maxSun, 0.7f)
-        );
-
-        windSpeed = Random.Range(
-            Mathf.Lerp(minWind, maxWind, 0.3f),
-            Mathf.Lerp(minWind, maxWind, 0.7f)
-        );
-
-        rain_Level = Random.Range(
-            Mathf.Lerp(minRain, maxRain, 0.2f),
-            Mathf.Lerp(minRain, maxRain, 0.6f)
-        );
-
-        pollinator_Level = Random.Range(
-            Mathf.Lerp(minPollinator, maxPollinator, 0.3f),
-            Mathf.Lerp(minPollinator, maxPollinator, 0.7f)
-        );
-
-        normalizeWorldStates();
-    }
 }

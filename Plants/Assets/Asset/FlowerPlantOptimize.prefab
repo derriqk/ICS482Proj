@@ -160,7 +160,7 @@ MonoBehaviour:
   minLeafLength: 6
   maxLeafLength: 40
   minLeafWidth: 2
-  maxLeafWidth: 25
+  maxLeafWidth: 30
   leafPrefab: {fileID: 3398868522557772280, guid: aac581c7641efa7448d946eb7027ed6b, type: 3}
   leafHolder: {fileID: 8541831198791900377}
   leafCount: 0
@@ -180,9 +180,9 @@ MonoBehaviour:
   maxLayers: 3
   minLayers: 1
   minPetalLength: 3
-  maxPetalLength: 16
+  maxPetalLength: 20
   minPetalWidth: 2
-  maxPetalWidth: 6
+  maxPetalWidth: 8
   centerPrefab: {fileID: 2051879660902046927, guid: a752610a94e41574ba676b00478519cd, type: 3}
   centers: []
   petalPrefab: {fileID: 8233431003556898170, guid: 6e93e2767c3e7054abdebd6d182f24b3, type: 3}

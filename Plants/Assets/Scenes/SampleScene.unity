@@ -405,7 +405,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &99694799
 Transform:
   m_ObjectHideFlags: 0
@@ -3699,7 +3699,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &538664582
 Transform:
   m_ObjectHideFlags: 0
@@ -4634,6 +4634,7 @@ GameObject:
   - component: {fileID: 723999757}
   - component: {fileID: 723999758}
   - component: {fileID: 723999759}
+  - component: {fileID: 723999760}
   m_Layer: 0
   m_Name: WorldHandler
   m_TagString: Untagged
@@ -4670,16 +4671,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba3b1a1ff1834d342832f0928fe7c9f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldHandlerFinal
-  mutationRate: 0.1
+  mutationRate: 0.3
   crossoverRate: 0.5
-  deviationAmount: 0.1
-  randomGenome: 0.15
+  deviationAmount: 0.2
+  randomGenome: 0.1
   retentionRate: 0.2
-  useTempScore: 0
-  useSunScore: 0
+  useTempScore: 1
+  useSunScore: 1
   useWindScore: 1
-  useRainScore: 0
-  usePollinatorScore: 0
+  useRainScore: 1
+  usePollinatorScore: 1
   temperature: 0
   sunlight_Level: 0
   windSpeed: 0
@@ -4690,6 +4691,16 @@ MonoBehaviour:
   windScore: 0
   rainScore: 0
   pollinatorScore: 0
+  minTemp: 0
+  maxTemp: 0
+  minSun: 0
+  maxSun: 0
+  minWind: 0
+  maxWind: 0
+  minRain: 0
+  maxRain: 0
+  minPollinator: 0
+  maxPollinator: 0
   plantList: []
   plantScripts: []
   plantPrefab: {fileID: 7250358376725611150, guid: 60767b3495bcc7a4b8f5c2b870339966, type: 3}
@@ -4702,11 +4713,12 @@ MonoBehaviour:
   bestPlant: {fileID: 0}
   bestPlantScript: {fileID: 0}
   fitnessSortedIndices: 
-  genspeed: 0.25
+  genspeed: 0.3
   auto: 0
   randAuto: 0
   randSpeed: 7
   predeterminedFlowers: {fileID: 723999759}
+  seasonBehavior: {fileID: 723999760}
 --- !u!114 &723999759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4720,6 +4732,45 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PredeterminedFlowers
   worldHandler: {fileID: 723999758}
+--- !u!114 &723999760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723999755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8db13bd752fb7ba49949fac2b00b2147, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SeasonBehavior
+  seasons: 00000000000000000000000000000000
+  currSeason: 0
+  seasonLength: 20
+  transitionLength: 10
+  updateInterval: 2
+  WHScript: {fileID: 723999758}
+  startTemp: 0
+  startSun: 0
+  startWind: 0
+  startRain: 0
+  startPollinator: 0
+  nextTemp: 0
+  nextSun: 0
+  nextWind: 0
+  nextRain: 0
+  nextPollinator: 0
+  minTemp: 0
+  maxTemp: 0
+  minSun: 0
+  maxSun: 0
+  minWind: 0
+  maxWind: 0
+  minRain: 0
+  maxRain: 0
+  minPollinator: 0
+  maxPollinator: 0
+  startDone: 0
 --- !u!1 &726313794
 GameObject:
   m_ObjectHideFlags: 0
@@ -5096,7 +5147,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &768530125
 Transform:
   m_ObjectHideFlags: 0
@@ -6636,7 +6687,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1020348552
 Transform:
   m_ObjectHideFlags: 0
@@ -8651,7 +8702,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1282946063
 Transform:
   m_ObjectHideFlags: 0
@@ -9864,7 +9915,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1506964886
 Transform:
   m_ObjectHideFlags: 0
@@ -10709,7 +10760,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1712624605
 Transform:
   m_ObjectHideFlags: 0
@@ -10799,7 +10850,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1789915289
 Transform:
   m_ObjectHideFlags: 0
