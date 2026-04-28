@@ -1,9 +1,11 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class SeasonBehavior : MonoBehaviour
 {
     public int[] seasons = new int[4]; // used for looping
+    public string[] seasonNames = new string[4] {"Summer", "Fall", "Winter", "Spring"};
     public int currSeason; // 0 = summer, 1 = fall, 2 = winter, 3 = spring
     private float seasonTimer = 0f; // counts season changing
     public float seasonLength = 10f; // how long each season lasts in seconds
@@ -40,11 +42,18 @@ public class SeasonBehavior : MonoBehaviour
     public float maxPollinator;
     public bool startDone = false;
 
+    public GameObject grounParent;
+    public List<GameObject> extraGroundObjects = new List<GameObject>(); // second ground layer that changes color based on season, purely aesthetic
+    private List<SpriteRenderer> extraGroundRenderers = new List<SpriteRenderer>();
+    private Color startGroundColor; // for lerping
+    private Color nextGroundColor; // for lerping
+
     public Coroutine currentLerpCoroutine;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        populateGround();
         initMinMaxStates(); // create min/max states
         currSeason = Random.Range(0, seasons.Length); // pick random season to start
         seasonCreate(currSeason); // create the environment for the starting season
@@ -52,6 +61,19 @@ public class SeasonBehavior : MonoBehaviour
         currSeason = (currSeason + 1) % seasons.Length; 
         seasonCreate(currSeason); // create the environment for the starting season again to generate the next states for lerping
         startDone = true;
+    }
+
+    public void populateGround() 
+    {
+        foreach (Transform child in grounParent.transform) 
+        {
+            foreach (Transform grandChild in child.transform) 
+            {
+                GameObject obj = grandChild.gameObject;
+                extraGroundObjects.Add(obj);
+                extraGroundRenderers.Add(obj.GetComponent<SpriteRenderer>());
+            }
+        }
     }
 
     // Update is called once per frame
@@ -63,8 +85,8 @@ public class SeasonBehavior : MonoBehaviour
         if (seasonTimer >= seasonLength) 
         {
             seasonTimer = 0f; // reset timer for next season
-            currSeason = (currSeason + 1) % seasons.Length; // loop seasons
             updateStartStates(); // set the start states to the end states of the last season
+            currSeason = (currSeason + 1) % seasons.Length; // loop seasons
             seasonCreate(currSeason); // create the environment for the new season
             StopCoroutine(currentLerpCoroutine); // stop the current lerp if it's still going
             WHScript.copyTemp(); // copy the new start states to the world handler so it can lerp from there
@@ -73,22 +95,29 @@ public class SeasonBehavior : MonoBehaviour
 
     public IEnumerator lerpSeason() 
     {
-        updateTimer = 0f; // reset timer for next transition
+        updateTimer = 0f;
+
         while (updateTimer < transitionLength) 
         {
-            //Debug.Log("Lerping season");
-            yield return new WaitForSeconds(updateInterval);
+            yield return null; // wait for next frame
+            // yield return new WaitForSeconds(updateInterval); // wait for the update interval
 
-            WHScript.temperature = Mathf.Lerp(startTemp, nextTemp, updateTimer / transitionLength);
-            WHScript.sunlight_Level = Mathf.Lerp(startSun, nextSun, updateTimer / transitionLength);
-            WHScript.windSpeed = Mathf.Lerp(startWind, nextWind, updateTimer / transitionLength);
-            WHScript.rain_Level = Mathf.Lerp(startRain, nextRain, updateTimer / transitionLength);
-            WHScript.pollinator_Level = Mathf.Lerp(startPollinator, nextPollinator, updateTimer / transitionLength);
+            float t = updateTimer / transitionLength;
+            t = (1f - Mathf.Cos(t * Mathf.PI)) * 0.5f;
+
+            WHScript.temperature = Mathf.Lerp(startTemp, nextTemp, t);
+            WHScript.sunlight_Level = Mathf.Lerp(startSun, nextSun, t);
+            WHScript.windSpeed = Mathf.Lerp(startWind, nextWind, t);
+            WHScript.rain_Level = Mathf.Lerp(startRain, nextRain, t);
+            WHScript.pollinator_Level = Mathf.Lerp(startPollinator, nextPollinator, t);
 
             WHScript.normalizeWorldStates();
-        }
 
-        yield break;
+            for (int i = 0; i < extraGroundRenderers.Count; i++) 
+            {
+                extraGroundRenderers[i].color = Color.Lerp(startGroundColor, nextGroundColor, t);
+            }
+        }
     }
 
     public void updateStartStates() 
@@ -98,6 +127,10 @@ public class SeasonBehavior : MonoBehaviour
         startWind = nextWind;
         startRain = nextRain;
         startPollinator = nextPollinator;
+
+        startGroundColor = nextGroundColor;
+
+        Debug.Log("current season: " + seasonNames[currSeason]);
     }
 
     public void seasonCreate(int index) 
@@ -106,19 +139,15 @@ public class SeasonBehavior : MonoBehaviour
         switch (index) 
         {
             case 0:
-                Debug.Log("Summer");
                 generateSummer();
                 break;
             case 1:
-                Debug.Log("Fall");
                 generateFall();
                 break;
             case 2:
-                Debug.Log("Winter");
                 generateWinter();
                 break;
             case 3:
-                Debug.Log("Spring");
                 generateSpring();
                 break;
         }
@@ -150,6 +179,8 @@ public class SeasonBehavior : MonoBehaviour
             Mathf.Lerp(minPollinator, maxPollinator, 0.5f),
             maxPollinator
         );
+
+        nextGroundColor = new Color(0.110f, 0.373f, 0.082f); // bright green for summer
     }
 
     public void generateWinter() 
@@ -178,6 +209,8 @@ public class SeasonBehavior : MonoBehaviour
             minPollinator,
             Mathf.Lerp(minPollinator, maxPollinator, 0.5f)
         );
+
+        nextGroundColor = new Color(0.8f, 0.8f, 0.8f); // gray for winter
     }
 
     public void generateSpring() 
@@ -206,6 +239,8 @@ public class SeasonBehavior : MonoBehaviour
             Mathf.Lerp(minPollinator, maxPollinator, 0.4f),
             Mathf.Lerp(minPollinator, maxPollinator, 0.6f)
         );
+
+        nextGroundColor = new Color(0.420f, 0.753f, 0.329f); // lighter green for spring
     }
 
     public void generateFall() 
@@ -234,6 +269,8 @@ public class SeasonBehavior : MonoBehaviour
             minPollinator,
             Mathf.Lerp(minPollinator, maxPollinator, 0.5f)
         );
+
+        nextGroundColor = new Color(0.659f, 0.302f, 0.075f); // brown for fall
     }
 
     public void initMinMaxStates()
