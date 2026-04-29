@@ -150,7 +150,7 @@ MonoBehaviour:
   minMainStalkCount: 1
   maxMainStalkCount: 5
   minStalkHeight: 4
-  maxStalkHeight: 18
+  maxStalkHeight: 25
   minSegmentAngleVariation: 0
   maxSegmentAngleVariation: 3
   minStartStalkAngle: -15
@@ -158,9 +158,9 @@ MonoBehaviour:
   minHeightVariation: 0
   maxHeightVariation: 0.5
   minLeafLength: 6
-  maxLeafLength: 20
+  maxLeafLength: 30
   minLeafWidth: 2
-  maxLeafWidth: 15
+  maxLeafWidth: 20
   leafPrefab: {fileID: 3398868522557772280, guid: aac581c7641efa7448d946eb7027ed6b, type: 3}
   leafHolder: {fileID: 8541831198791900377}
   leafCount: 0
@@ -175,14 +175,14 @@ MonoBehaviour:
   maxBranchThickness: 0
   branchPrefab: {fileID: 6426837723753244961, guid: 0cfa79d770593dd49898f6f46fb4ff11, type: 3}
   branchCount: 0
-  minPetalCount: 5
-  maxPetalCount: 15
-  maxLayers: 4
+  minPetalCount: 2
+  maxPetalCount: 20
+  maxLayers: 5
   minLayers: 1
   minPetalLength: 1.5
-  maxPetalLength: 20
+  maxPetalLength: 25
   minPetalWidth: 2
-  maxPetalWidth: 7
+  maxPetalWidth: 10
   centerPrefab: {fileID: 2051879660902046927, guid: a752610a94e41574ba676b00478519cd, type: 3}
   centers: []
   petalPrefab: {fileID: 8233431003556898170, guid: 6e93e2767c3e7054abdebd6d182f24b3, type: 3}
@@ -205,6 +205,7 @@ MonoBehaviour:
   deviationAmount: 0.4
   crossoverRate: 0
   randomGenome: 0
+  HeightTrait: 0
 --- !u!212 &1439887204475043344
 SpriteRenderer:
   m_ObjectHideFlags: 0
