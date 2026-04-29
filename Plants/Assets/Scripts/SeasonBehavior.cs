@@ -50,6 +50,10 @@ public class SeasonBehavior : MonoBehaviour
 
     public Coroutine currentLerpCoroutine;
 
+    public GameObject[] sunlight_beams = new GameObject[2];
+    public int maxAlpha = 20; // min is 0
+    private int currentAlpha = 0; // alpha for sunlight, based on sunlight level and max alpha
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -93,6 +97,19 @@ public class SeasonBehavior : MonoBehaviour
         }
     }
 
+    public void updateCurrAlpha()
+    {
+        currentAlpha = Mathf.RoundToInt((WHScript.sunlight_Level - minSun) / (maxSun - minSun) * maxAlpha);
+        currentAlpha = Mathf.Clamp(currentAlpha, 0, maxAlpha);
+
+        foreach (GameObject beam in sunlight_beams) 
+        {
+            Color c = beam.GetComponent<SpriteRenderer>().color;
+            c.a = currentAlpha / 255f; // convert to 0-1 range for alpha
+            beam.GetComponent<SpriteRenderer>().color = c;
+        }
+    }
+
     public IEnumerator lerpSeason() 
     {
         updateTimer = 0f;
@@ -112,6 +129,7 @@ public class SeasonBehavior : MonoBehaviour
             WHScript.pollinator_Level = Mathf.Lerp(startPollinator, nextPollinator, t);
 
             WHScript.normalizeWorldStates();
+            updateCurrAlpha();
 
             for (int i = 0; i < extraGroundRenderers.Count; i++) 
             {
@@ -130,7 +148,7 @@ public class SeasonBehavior : MonoBehaviour
 
         startGroundColor = nextGroundColor;
 
-        Debug.Log("current season: " + seasonNames[currSeason]);
+        //Debug.Log("current season: " + seasonNames[currSeason]);
     }
 
     public void seasonCreate(int index) 

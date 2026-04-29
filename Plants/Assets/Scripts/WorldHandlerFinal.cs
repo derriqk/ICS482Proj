@@ -165,7 +165,7 @@ public class WorldHandlerFinal : MonoBehaviour
     void Update()
     {
         delay += Time.deltaTime;
-        if (delay < 2f) return;
+        if (delay < 1f) return;
 
         // resets generation
         if (Input.GetKeyDown(KeyCode.Space))
