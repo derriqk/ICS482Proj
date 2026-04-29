@@ -221,7 +221,7 @@ public class SeasonBehavior : MonoBehaviour
             maxPollinator
         );
 
-        nextGroundColor = new Color(0.110f, 0.373f, 0.082f); // bright green for summer
+        nextGroundColor = new Color(0.110f, 0.373f, 0.082f); // dark green for summer
     }
 
     public void generateWinter() 
