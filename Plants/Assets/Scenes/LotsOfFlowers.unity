@@ -3827,8 +3827,8 @@ MonoBehaviour:
   - Winter
   - Spring
   currSeason: 0
-  seasonLength: 10
-  transitionLength: 2
+  seasonLength: 30
+  transitionLength: 10
   updateInterval: 1
   WHScript: {fileID: 723999758}
   startTemp: 0
