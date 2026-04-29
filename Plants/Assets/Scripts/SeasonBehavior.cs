@@ -54,6 +54,12 @@ public class SeasonBehavior : MonoBehaviour
     public int maxAlpha = 20; // min is 0
     private int currentAlpha = 0; // alpha for sunlight, based on sunlight level and max alpha
 
+    public GameObject[] wind_particles = new GameObject[3];
+    public int maxWindAlpha = 50; // min is 0
+    private int currentWindAlpha = 0; // alpha for wind particles, based on wind
+    public GameObject windParent; // to jitter randomly for more dynamic wind effect
+    public Transform windParentogPos; // original position to jitter around
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -64,6 +70,7 @@ public class SeasonBehavior : MonoBehaviour
         updateStartStates(); // set the start states to the generated states for the season
         currSeason = (currSeason + 1) % seasons.Length; 
         seasonCreate(currSeason); // create the environment for the starting season again to generate the next states for lerping
+        windParentogPos = windParent.transform; // set original position for wind jitter
         startDone = true;
     }
 
@@ -108,6 +115,16 @@ public class SeasonBehavior : MonoBehaviour
             c.a = currentAlpha / 255f; // convert to 0-1 range for alpha
             beam.GetComponent<SpriteRenderer>().color = c;
         }
+
+        currentWindAlpha = Mathf.RoundToInt((WHScript.windSpeed - minWind) / (maxWind - minWind) * maxWindAlpha);
+        currentWindAlpha = Mathf.Clamp(currentWindAlpha, 0, maxWindAlpha);
+
+        foreach (GameObject wind in wind_particles) 
+        {
+            Color c = wind.GetComponent<SpriteRenderer>().color;
+            c.a = currentWindAlpha / 255f; // convert to 0-1 range for alpha
+            wind.GetComponent<SpriteRenderer>().color = c;
+        }
     }
 
     public IEnumerator lerpSeason() 
@@ -130,6 +147,12 @@ public class SeasonBehavior : MonoBehaviour
 
             WHScript.normalizeWorldStates();
             updateCurrAlpha();
+            if (Random.value < .9f) 
+            {
+            windParent.transform.position = windParentogPos.position + new Vector3(Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f), 0f); // jitter wind parent for dynamic effect
+            } else {
+            windParent.transform.position = windParentogPos.position; // reset to original position most of the time to prevent excessive drifting
+            }
 
             for (int i = 0; i < extraGroundRenderers.Count; i++) 
             {

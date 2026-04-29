@@ -17,6 +17,7 @@ public class WorldHandlerFinal : MonoBehaviour
     public float randomGenome; // rlly low please, or -1 if unused
     public float retentionRate; // size of breeder pool
     private float currRetention;
+    private int maxPlantCount = 73;
 
     // example if wind is off, wind is not used in score calc
     [Header("Toggle State Scores")]
